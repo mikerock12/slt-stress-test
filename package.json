@@ -1,0 +1,18 @@
+{
+  "name": "slt-stress-test",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Teste de estresse de CPU, GPU, memória e disco direto no navegador — Smells Like Tech",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "node scripts/servidor.mjs",
+    "build": "node scripts/montar-site.mjs",
+    "deploy": "node scripts/montar-site.mjs && npx wrangler@4 deploy",
+    "test": "node --test \"tests/*.test.mjs\"",
+    "check": "node scripts/checar-sintaxe.mjs && node --test \"tests/*.test.mjs\""
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

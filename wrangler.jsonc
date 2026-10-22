@@ -1,0 +1,11 @@
+// Site estático no Cloudflare Workers (assets). Publicar: npm run deploy
+{
+  "name": "slt-stress-test",
+  "compatibility_date": "2026-10-19",
+  "assets": {
+    "directory": "./dist"
+  },
+  "routes": [
+    { "pattern": "stresstest.smellsliketech.com.br", "custom_domain": true }
+  ]
+}

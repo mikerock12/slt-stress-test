@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- WinExe: sem janela de console. O plugin vive na bandeja do sistema. -->
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>SLTStressTest.Plugin</RootNamespace>
+    <AssemblyName>SLTStressTestPlugin</AssemblyName>
+    <Version>1.0.0</Version>
+    <Product>SLT Stress Test Plugin</Product>
+    <Company>Smells Like Tech</Company>
+    <Copyright>© 2026 Smells Like Tech</Copyright>
+    <ApplicationIcon>Assets\icone.ico</ApplicationIcon>
+    <!-- Administrador: sem isso o Windows não entrega SMART nem sensores da placa-mãe/CPU. -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <UseWindowsForms>true</UseWindowsForms>
+
+    <!-- Um único .exe, sem exigir o .NET instalado no computador do cliente. -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <DebugType>embedded</DebugType>
+    <SatelliteResourceLanguages>pt-BR</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.6" />
+    <PackageReference Include="System.Management" Version="10.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\icone.ico" LogicalName="icone.ico" />
+  </ItemGroup>
+</Project>
