@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SLT Stress Test — teste de estresse de CPU, GPU, memória e disco no navegador</title>
+  <meta name="description" content="Teste de estresse gratuito direto no navegador: CPU (estilo Prime95), GPU (estilo FurMark), memória (estilo MemTest86) e disco (estilo CrystalDiskMark), com relatório didático. Smells Like Tech.">
+  <meta name="theme-color" content="#05070b">
+  <meta property="og:title" content="SLT Stress Test — Smells Like Tech">
+  <meta property="og:description" content="Teste CPU, GPU, memória e disco direto no navegador e receba um relatório didático.">
+  <meta property="og:image" content="https://stresstest.smellsliketech.com.br/assets/logo-512.png">
+  <meta property="og:url" content="https://stresstest.smellsliketech.com.br/">
+  <link rel="icon" href="assets/favicon-32.png" sizes="32x32">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <header class="topo">
+    <a class="marca" href="#inicio">
+      <img src="assets/logo-256.png" alt="" width="40" height="40">
+      <span><strong>SLT Stress Test</strong><small>Smells Like Tech</small></span>
+    </a>
+    <nav aria-label="Seções">
+      <a href="#configurar">Testar</a>
+      <a href="#plugin">Plugin</a>
+      <a href="#como-funciona">Como funciona</a>
+      <a href="#creditos">Créditos</a>
+    </nav>
+  </header>
+
+  <main>
+    <section id="inicio" class="hero">
+      <div class="hero-texto">
+        <p class="selo">Gratuito · sem instalar nada · roda no seu navegador</p>
+        <h1>Coloque seu PC no limite e descubra se ele aguenta.</h1>
+        <p class="lead">Testes de estresse inspirados no Prime95, FurMark, MemTest86 e CrystalDiskMark.
+          Rode um componente por vez ou tudo junto no <strong>MAX STRESS</strong> e receba um relatório
+          claro: o que foi medido, se houve erro e se o desempenho caiu com o calor.</p>
+        <div class="hero-acoes">
+          <a class="botao primario" href="#configurar">Começar teste</a>
+          <a class="botao" href="#como-funciona">O que é medido?</a>
+        </div>
+      </div>
+      <aside class="cartao sistema" aria-labelledby="titulo-sistema">
+        <h2 id="titulo-sistema">Seu sistema</h2>
+        <dl id="sistema"><div><dt>Detectando…</dt><dd></dd></div></dl>
+        <div id="plugin-estado" class="plugin-estado" aria-live="polite"></div>
+        <p class="nota">O navegador mostra só parte do hardware. A memória total, por exemplo, é
+          arredondada e limitada a 8 GB por privacidade.</p>
+      </aside>
+    </section>
+
+    <section id="configurar" class="bloco">
+      <h2><span class="passo">1</span> Escolha os testes</h2>
+      <div class="grade-testes">
+        <label class="card-teste" data-teste="cpu">
+          <input type="checkbox" name="teste" value="cpu" checked>
+          <span class="card-cab"><span class="icone" aria-hidden="true">⚙️</span><span><strong>CPU</strong><small>estilo Prime95</small></span></span>
+          <span class="card-desc">Primos de Mersenne (Lucas-Lehmer) e FFT conferidos em todos os núcleos. Detecta erro de cálculo e queda de clock.</span>
+          <span class="opcao">Threads
+            <select name="cpuThreads" id="cpu-threads"></select>
+          </span>
+        </label>
+        <label class="card-teste" data-teste="gpu">
+          <input type="checkbox" name="teste" value="gpu" checked>
+          <span class="card-cab"><span class="icone" aria-hidden="true">🍩</span><span><strong>GPU</strong><small>estilo FurMark</small></span></span>
+          <span class="card-desc">Rosquinha peluda em raymarching WebGL2. Mede FPS, vazão de pixels e procura artefatos.</span>
+          <span class="opcao">Resolução
+            <select name="gpuRes">
+              <option value="1280x720">720p</option>
+              <option value="1920x1080" selected>1080p</option>
+              <option value="2560x1440">1440p</option>
+              <option value="3840x2160">4K</option>
+            </select>
+          </span>
+          <span class="opcao">Intensidade
+            <select name="gpuInt">
+              <option value="64">Leve</option>
+              <option value="128" selected>Normal</option>
+              <option value="200">Pesada</option>
+            </select>
+          </span>
+        </label>
+        <label class="card-teste" data-teste="memoria">
+          <input type="checkbox" name="teste" value="memoria" checked>
+          <span class="card-cab"><span class="icone" aria-hidden="true">🧠</span><span><strong>Memória</strong><small>estilo MemTest86</small></span></span>
+          <span class="card-desc">Oito padrões gravados e conferidos palavra por palavra. Mede banda e latência.</span>
+          <span class="opcao">Quantidade
+            <select name="memMiB">
+              <option value="256">256 MiB</option>
+              <option value="512">512 MiB</option>
+              <option value="1024" selected>1 GiB</option>
+              <option value="2048">2 GiB</option>
+              <option value="4096">4 GiB</option>
+            </select>
+          </span>
+        </label>
+        <label class="card-teste" data-teste="disco">
+          <input type="checkbox" name="teste" value="disco" checked>
+          <span class="card-cab"><span class="icone" aria-hidden="true">💽</span><span><strong>Disco</strong><small>estilo CrystalDiskMark</small></span></span>
+          <span class="card-desc">Sequencial 1 MiB e aleatório 4 KiB, leitura e escrita, com verificação dos dados.</span>
+          <span class="opcao" id="opcao-disco-alvo" hidden>Onde testar
+            <select name="discoAlvo" id="disco-alvo">
+              <option value="navegador">Navegador (OPFS)</option>
+            </select>
+          </span>
+          <span class="opcao">Arquivo de teste
+            <select name="discoMiB">
+              <option value="256">256 MiB</option>
+              <option value="1024" selected>1 GiB</option>
+              <option value="2048">2 GiB</option>
+              <option value="4096">4 GiB</option>
+            </select>
+          </span>
+        </label>
+      </div>
+
+      <h2><span class="passo">2</span> Duração</h2>
+      <div class="duracoes" role="radiogroup" aria-label="Duração do teste">
+        <label><input type="radio" name="duracao" value="120"><span>2 min<small>rápido</small></span></label>
+        <label><input type="radio" name="duracao" value="900" checked><span>15 min</span></label>
+        <label><input type="radio" name="duracao" value="1800"><span>30 min</span></label>
+        <label><input type="radio" name="duracao" value="3600"><span>1 hora</span></label>
+        <label><input type="radio" name="duracao" value="0"><span>Indefinido<small>até você parar</small></span></label>
+      </div>
+
+      <h2><span class="passo">3</span> Iniciar</h2>
+      <div class="iniciar">
+        <button type="button" class="botao" id="btn-selecionados">Testar selecionados</button>
+        <button type="button" class="botao max" id="btn-max">🔥 MAX STRESS<small>CPU + GPU + memória + disco ao mesmo tempo</small></button>
+      </div>
+      <p class="nota" id="aviso-compat" hidden></p>
+    </section>
+
+    <section id="aovivo" class="bloco" hidden aria-live="polite">
+      <div class="aovivo-cab">
+        <div>
+          <p class="selo" id="aovivo-modo">Teste em andamento</p>
+          <p class="cronometro"><span id="tempo-decorrido">00:00</span><small id="tempo-restante"></small></p>
+        </div>
+        <button type="button" class="botao parar" id="btn-parar">■ Parar e ver relatório</button>
+      </div>
+      <div class="progresso"><div id="barra-progresso"></div></div>
+      <p class="nota">Mantenha esta aba visível: com a aba escondida, o navegador pausa o teste de GPU.
+        Acompanhe a temperatura com um programa nativo (veja <a href="#creditos">ferramentas recomendadas</a>).
+        Pressione <kbd>Esc</kbd> para parar a qualquer momento.</p>
+      <div class="aovivo-grade">
+        <div class="tela-gpu" id="tela-gpu" hidden></div>
+        <div class="paineis" id="paineis"></div>
+      </div>
+      <details class="log" open>
+        <summary>Registro de eventos</summary>
+        <ol id="log"></ol>
+      </details>
+    </section>
+
+    <section id="relatorio" class="bloco" hidden></section>
+
+    <section id="plugin" class="bloco">
+      <div class="cartao plugin-cartao">
+        <div>
+          <p class="selo">Opcional · Windows 10/11 · gratuito</p>
+          <h2>Plugin: libera os sensores reais</h2>
+          <p>O navegador não deixa sites lerem sensores. O <strong>SLT Stress Test Plugin</strong> é um
+            programa pequeno que fica ao lado do relógio do Windows e entrega ao site, só neste
+            computador:</p>
+          <ul class="lista-plugin">
+            <li><strong>Temperatura, clock e potência reais</strong> da CPU e da GPU durante o teste</li>
+            <li><strong>Frequência da memória</strong> (MT/s), modelo e quantidade de pentes</li>
+            <li><strong>Saúde dos discos</strong> (SMART): estado, temperatura, horas ligado, desgaste e erros</li>
+            <li><strong>Teste de disco real</strong>, sem o cache do Windows, no estilo do CrystalDiskMark,
+              no HD ou SSD que você escolher</li>
+          </ul>
+          <p class="nota">Ele só aceita pedidos deste site e do próprio computador (127.0.0.1), não envia
+            nada para a internet e pede permissão de administrador porque o Windows exige isso para
+            ler SMART e sensores. Para a temperatura da CPU, o Windows também precisa do driver
+            gratuito <a href="https://pawnio.eu/" target="_blank" rel="noopener">PawnIO</a> (o mesmo que o LibreHardwareMonitor usa);
+            o plugin avisa se faltar. Os sensores vêm da biblioteca de código aberto
+            <a href="https://github.com/LibreHardwareMonitor/LibreHardwareMonitor" target="_blank" rel="noopener">LibreHardwareMonitor</a> (MPL-2.0).</p>
+        </div>
+        <div class="plugin-acoes">
+          <a class="botao primario" id="btn-baixar-plugin" href="#">⬇ Baixar plugin (.exe)</a>
+          <button type="button" class="botao" id="btn-verificar-plugin">Já abri o plugin: verificar</button>
+          <ol class="nota passos-plugin">
+            <li>Baixe e abra o <code>SLTStressTestPlugin.exe</code> (não precisa instalar).</li>
+            <li>Aceite o pedido de administrador do Windows.</li>
+            <li>Se o SmartScreen avisar, clique em "Mais informações" e depois em "Executar assim mesmo".</li>
+            <li>Volte aqui: o site detecta o plugin sozinho. Se o navegador perguntar sobre acesso à rede local, permita.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section id="como-funciona" class="bloco">
+      <h2>Como funciona</h2>
+      <div class="grade-explica">
+        <article class="cartao">
+          <h3>⚙️ CPU</h3>
+          <p>Cada thread do processador roda dois trabalhos com resposta conhecida, como o Prime95:
+            o <strong>teste de Lucas-Lehmer</strong> em primos de Mersenne já descobertos (o resultado
+            final tem de ser zero) e uma <strong>FFT</strong> de 4096 pontos que cabe no cache e precisa
+            dar sempre o mesmo número. Se a CPU errar uma conta, é instabilidade de hardware.</p>
+          <p>O <strong>clock efetivo</strong> é estimado por uma cadeia de operações de 1 ciclo. Ele não
+            substitui o sensor, mas mostra se o processador reduziu a velocidade com o tempo.</p>
+        </article>
+        <article class="cartao">
+          <h3>🍩 GPU</h3>
+          <p>Uma rosquinha coberta de "pelo" é desenhada por raymarching volumétrico, a mesma ideia da
+            cena do FurMark: muitos cálculos por pixel, sem pausa. A resolução interna é fixa para os
+            números serem comparáveis. A cada 15 segundos um quadro de referência é refeito e comparado
+            ao primeiro: qualquer diferença é <strong>artefato</strong>.</p>
+          <p>O navegador limita os quadros à taxa do monitor, então o teste desenha a cena várias vezes
+            por quadro até saturar a placa. O FPS mostrado é o equivalente sem limite.</p>
+        </article>
+        <article class="cartao">
+          <h3>🧠 Memória</h3>
+          <p>Como o MemTest86, grava padrões que revelam defeitos diferentes: bits todos 0 e todos 1,
+            xadrez, bit caminhante, endereço próprio, inversões móveis e sequência aleatória. Depois
+            confere palavra por palavra. Também mede banda de escrita, leitura e cópia e a latência.</p>
+          <p>O navegador só testa a memória que ele mesmo consegue reservar (alguns GB). Para varrer
+            100% da RAM, use o Memtest86+ a partir de um pendrive.</p>
+        </article>
+        <article class="cartao">
+          <h3>💽 Disco</h3>
+          <p>Como o CrystalDiskMark, grava e lê um arquivo temporário em blocos de 1 MiB (sequencial)
+            e de 4 KiB em posições aleatórias. Cada página leva um carimbo conferido na leitura. O
+            arquivo fica no armazenamento privado do site e é apagado no fim.</p>
+          <p>A leitura pode vir do cache do sistema, então pode passar da velocidade real do disco.</p>
+        </article>
+      </div>
+
+      <h3 class="subtitulo">O que dá para medir só com o navegador e com o plugin</h3>
+      <p class="nota">Sem o plugin, a temperatura é indicada pela queda de desempenho com o tempo
+        (sinal de throttling) e, no Chrome/Edge, pela pressão térmica da Compute Pressure API; o clock
+        da CPU é estimado e a memória é avaliada pela banda e pela latência.</p>
+      <div class="tabela-rolagem">
+        <table class="tabela">
+          <thead><tr><th>Medida</th><th>Só o navegador</th><th>Com o plugin</th></tr></thead>
+          <tbody>
+            <tr><td>Temperatura da CPU</td><td class="nao">Não</td><td class="sim">Sim (com o driver PawnIO)</td></tr>
+            <tr><td>Temperatura, clock e potência da GPU</td><td class="nao">Não</td><td class="sim">Sim (NVIDIA e AMD; GPUs Intel informam menos)</td></tr>
+            <tr><td>Clock da CPU</td><td class="parcial">Estimado</td><td class="sim">Sim</td></tr>
+            <tr><td>Frequência da memória</td><td class="nao">Não</td><td class="sim">Sim</td></tr>
+            <tr><td>Erros de cálculo, memória, artefatos</td><td class="sim">Sim</td><td class="sim">Sim</td></tr>
+            <tr><td>Velocidade do disco</td><td class="parcial">Do navegador (com cache)</td><td class="sim">Disco real, sem cache</td></tr>
+            <tr><td>Saúde do disco (SMART)</td><td class="nao">Não</td><td class="sim">Sim</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="creditos" class="bloco">
+      <h2>Créditos e ferramentas recomendadas</h2>
+      <p>O SLT Stress Test recria no navegador os <em>princípios</em> destas ferramentas. Nenhum
+        código delas foi copiado: são programas nativos, que não rodam numa página web. Todo o
+        crédito pelas ideias é dos autores originais. Para ler sensores reais (temperatura, clocks,
+        SMART), use-as junto com o nosso teste.</p>
+      <div class="grade-creditos">
+        <a class="cartao credito" href="https://www.mersenne.org/download/" target="_blank" rel="noopener">
+          <strong>Prime95</strong><span>George Woltman / GIMPS · freeware, código-fonte disponível sob licença própria</span>
+          <small>Inspirou o teste de CPU (Lucas-Lehmer + FFT)</small></a>
+        <a class="cartao credito" href="https://geeks3d.com/furmark/" target="_blank" rel="noopener">
+          <strong>FurMark</strong><span>Geeks3D · freeware, código fechado</span>
+          <small>Inspirou o teste de GPU (rosquinha peluda)</small></a>
+        <a class="cartao credito" href="https://www.memtest86.com/" target="_blank" rel="noopener">
+          <strong>MemTest86</strong><span>PassMark Software · freeware/comercial</span>
+          <small>Inspirou os padrões do teste de memória</small></a>
+        <a class="cartao credito" href="https://www.memtest.org/" target="_blank" rel="noopener">
+          <strong>Memtest86+</strong><span>Equipe Memtest86+ · código aberto (GPL-2.0)</span>
+          <small>Recomendado para testar 100% da RAM fora do sistema</small></a>
+        <a class="cartao credito" href="https://crystalmark.info/en/software/crystaldiskmark/" target="_blank" rel="noopener">
+          <strong>CrystalDiskMark</strong><span>Crystal Dew World (hiyohiyo) · código aberto (MIT)</span>
+          <small>Inspirou o teste de disco (SEQ 1 MiB e RND 4 KiB)</small></a>
+        <a class="cartao credito" href="https://crystalmark.info/en/software/crystaldiskinfo/" target="_blank" rel="noopener">
+          <strong>CrystalDiskInfo</strong><span>Crystal Dew World (hiyohiyo) · código aberto (MIT)</span>
+          <small>Recomendado para a saúde (SMART) de HDD e SSD</small></a>
+        <a class="cartao credito" href="https://github.com/LibreHardwareMonitor/LibreHardwareMonitor" target="_blank" rel="noopener">
+          <strong>LibreHardwareMonitor</strong><span>Código aberto (MPL-2.0)</span>
+          <small>A biblioteca dele lê os sensores dentro do nosso plugin</small></a>
+        <a class="cartao credito" href="https://github.com/Blacktempel/DiskInfoToolkit" target="_blank" rel="noopener">
+          <strong>DiskInfoToolkit e RAMSPDToolkit</strong><span>Blacktempel · código aberto (MPL-2.0)</span>
+          <small>SMART e SPD da memória, usados pelo plugin via LibreHardwareMonitor</small></a>
+        <a class="cartao credito" href="https://pawnio.eu/" target="_blank" rel="noopener">
+          <strong>PawnIO</strong><span>namazso · driver assinado, instalado à parte</span>
+          <small>Libera a temperatura e o clock da CPU para o plugin</small></a>
+        <a class="cartao credito" href="https://www.hwinfo.com/" target="_blank" rel="noopener">
+          <strong>HWiNFO</strong><span>Martin Malík · freeware</span>
+          <small>Recomendado para sensores detalhados no Windows</small></a>
+        <a class="cartao credito" href="https://www.smartmontools.org/" target="_blank" rel="noopener">
+          <strong>smartmontools</strong><span>Código aberto (GPL-2.0)</span>
+          <small>SMART pela linha de comando (Windows, Linux, macOS)</small></a>
+      </div>
+      <p class="nota">Marcas citadas pertencem aos seus donos. O SLT Stress Test não tem vínculo
+        com esses projetos. Código do site e do plugin sob licença MIT; componentes de terceiros do
+        plugin listados em <a href="https://github.com/mikerock12/slt-stress-test/blob/main/plugin/TERCEIROS.md" target="_blank" rel="noopener">TERCEIROS.md</a>.</p>
+    </section>
+  </main>
+
+  <footer class="rodape">
+    <p><strong>SLT Stress Test</strong> · um projeto <a href="https://smellsliketech.com.br" target="_blank" rel="noopener">Smells Like Tech</a></p>
+    <p>Dúvidas e sugestões: <a href="mailto:contato@smellsliketech.com.br">contato@smellsliketech.com.br</a></p>
+    <p class="nota">Testes de estresse elevam temperatura e consumo. Use por sua conta e risco e
+      acompanhe as temperaturas. Nenhum dado do teste sai do seu computador.</p>
+  </footer>
+
+  <dialog id="dialogo-aviso" class="dialogo">
+    <form method="dialog">
+      <h2>Antes de começar</h2>
+      <ul>
+        <li>O teste leva CPU, GPU, memória e disco ao máximo. O computador vai esquentar e as
+          ventoinhas vão acelerar: isso é esperado.</li>
+        <li>Em notebook, ligue na tomada. Evite testes longos em aparelhos com refrigeração fraca.</li>
+        <li>Abra um monitor de temperatura nativo (ex.: LibreHardwareMonitor ou HWiNFO). Se a CPU
+          passar de ~95 °C ou a GPU de ~90 °C, pare o teste.</li>
+        <li>Feche trabalhos não salvos. Um sistema instável pode travar durante o teste.</li>
+        <li>O teste de disco grava um arquivo temporário (apagado no fim). Nada é enviado à internet.</li>
+      </ul>
+      <label class="concordo"><input type="checkbox" id="aceite" required> Entendi os riscos e quero continuar</label>
+      <div class="dialogo-acoes">
+        <button value="cancelar" class="botao" formnovalidate>Cancelar</button>
+        <button value="ok" class="botao primario">Iniciar teste</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>
