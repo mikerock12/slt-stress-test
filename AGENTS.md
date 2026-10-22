@@ -100,8 +100,9 @@ MAX STRESS de 2 min, conferir o relatório, a impressão em PDF e o JSON exporta
 
 ## Publicação
 
-- Hospedagem: Cloudflare Pages (projeto `slt-stress-test`), deploy direto:
-  `npm run build` e `npx wrangler pages deploy dist --project-name slt-stress-test --branch main`. Domínio customizado `stresstest.smellsliketech.com.br`. A zona
-  smellsliketech.com.br já está no Cloudflare, então o DNS é um CNAME criado pelo próprio
-  Pages; o Registro.br só muda se os nameservers da zona mudarem.
+- Hospedagem: Cloudflare Workers com assets estáticos (o Pages foi incorporado ao Workers),
+  Worker `slt-stress-test`, configuração em `wrangler.jsonc`. Publicar a partir da `main`:
+  `npm run deploy` (monta `dist/` e roda `wrangler deploy`). O domínio
+  `stresstest.smellsliketech.com.br` é um custom domain do Worker, criado pelo próprio deploy;
+  a zona smellsliketech.com.br usa nameservers do Cloudflare, então o Registro.br não muda.
 - Repositório público no GitHub; backup em `G:/Meu Drive/Backups/Smells Like Tech - Stress Test/`.

@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "node scripts/servidor.mjs",
     "build": "node scripts/montar-site.mjs",
+    "deploy": "node scripts/montar-site.mjs && npx wrangler@4 deploy",
     "test": "node --test \"tests/*.test.mjs\"",
     "check": "node scripts/checar-sintaxe.mjs && node --test \"tests/*.test.mjs\""
   },
