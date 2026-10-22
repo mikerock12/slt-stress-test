@@ -36,9 +36,17 @@ links. Nenhum código delas foi copiado.
 
 ## Estado atual
 
-- 22/10/2026 — Estrutura, documentação e primeira versão completa do site criadas localmente.
-  Ainda **sem git, sem publicação, sem repositório e sem backup**: aguardando o dono aprovar a
-  prévia local.
+- 22/10/2026 — **No ar**: https://stresstest.smellsliketech.com.br (Cloudflare Workers com
+  assets, Worker `slt-stress-test`, versão `f004a75c-7074-4c46-84e6-0b857f62c970`, custom
+  domain criado pelo `wrangler deploy`; zona com NS Cloudflare, Registro.br sem mudança).
+  Repositório público https://github.com/mikerock12/slt-stress-test, PR #1 com CI verde (site
+  + plugin) e merge na `main`. Release v1.0.0 com `SLTStressTestPlugin.exe` (SHA-256
+  904867e650bc90f5e2031e544915fdcf7e9c148f74d8c3da37ad6229d13d6535) e SHA256SUMS.txt.
+  Backup em `G:/Meu Drive/Backups/Smells Like Tech - Stress Test/2026-10-22`.
+- Conferido em produção: HTTPS 200, CSP com `connect-src http://127.0.0.1:5299`, workers com
+  `text/javascript`, download do plugin pela release (61 MB), plugin aceita a origem de
+  produção (CORS). O DNS do provedor desta máquina (45.165.84.10) guardou NXDOMAIN de uma
+  consulta feita antes do deploy; o teste no Chrome do dono ficou para quando expirar.
 - Verificado no Chrome 152 (Windows, Intel HD 530, 4 threads): `npm run check` 12/12; MAX
   STRESS de 2 min completo; CPU ~2,4 GFLOPS e clock estimado ~3,3 GHz; GPU ~5 FPS a 1080p e
   ~10 FPS a 720p; memória 1 GiB sem erros; disco ~430 MB/s leitura seq.; arquivo OPFS
