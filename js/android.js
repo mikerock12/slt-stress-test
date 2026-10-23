@@ -1,4 +1,4 @@
-export const DOWNLOAD_APK = '/assets/downloads/SLTStressTest-v1.2.0.apk';
+export const DOWNLOAD_APK = '/assets/downloads/SLTStressTest-v1.2.1.apk';
 export const androidDisponivel = () => typeof globalThis.SLTAndroid?.inventario === 'function';
 export function inventarioAndroid() {
   if (!androidDisponivel()) return null;
