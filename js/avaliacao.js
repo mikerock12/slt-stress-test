@@ -177,9 +177,15 @@ export function avaliar(componente, resumo, extra = {}) {
     if (!total) return { status: 'na', titulo: 'Indisponível', motivos: ['Navegador sem Compute Pressure API (disponível no Chrome e no Edge).'] };
     const criticas = (dist.critical || 0) / total;
     const serias = (dist.serious || 0) / total;
-    if (criticas > 0.05) {
+    // Sob carga total a pressão fica crítica em qualquer PC: sozinha não é defeito. Só pede
+    // atenção quando a CPU também perdeu desempenho (sinal de refrigeração no limite).
+    const quedaCpu = extra.quedaCpu ?? null;
+    const comQueda = quedaCpu !== null && quedaCpu >= QUEDA_ATENCAO.cpu;
+    if (criticas > 0.05 && comQueda) {
       piora('atencao');
-      motivos.push(`O sistema ficou em pressão crítica em ${(criticas * 100).toFixed(0)}% do tempo. Sob carga total isso pode ser normal, mas se vier junto com queda de desempenho, a refrigeração está no limite.`);
+      motivos.push(`O sistema ficou em pressão crítica em ${(criticas * 100).toFixed(0)}% do tempo e a CPU perdeu ${quedaCpu.toFixed(0)}% de desempenho: a refrigeração está no limite.`);
+    } else if (criticas > 0.05) {
+      motivos.push(`Pressão crítica em ${(criticas * 100).toFixed(0)}% do tempo, o esperado com o processador em carga total. Como o desempenho não caiu, não indica problema.`);
     } else {
       motivos.push(`Pressão crítica em ${(criticas * 100).toFixed(0)}% do tempo e séria em ${(serias * 100).toFixed(0)}%.`);
     }

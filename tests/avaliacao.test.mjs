@@ -32,10 +32,22 @@ test('teste sem amostras fica sem dados', () => {
   assert.equal(avaliar('memoria', resumirComponente('memoria', {})).status, 'na');
 });
 
-test('pressão sem API fica indisponível e crítica frequente pede atenção', () => {
+test('pressão sem API fica indisponível', () => {
   assert.equal(avaliar('pressao', resumirComponente('pressao', {}), {}).status, 'na');
-  const a = avaliar('pressao', resumirComponente('pressao', { estado: estavel(3) }), { distribuicao: { critical: 50, nominal: 10 } });
+});
+
+test('pressão crítica sem queda da CPU não rebaixa o veredito', () => {
+  const resumo = resumirComponente('pressao', { estado: estavel(3) });
+  const semQueda = avaliar('pressao', resumo, { distribuicao: { critical: 60 }, quedaCpu: 2 });
+  assert.equal(semQueda.status, 'ok');
+  assert.match(semQueda.motivos.join(' '), /não indica problema/);
+  assert.equal(avaliar('pressao', resumo, { distribuicao: { critical: 60 } }).status, 'ok', 'sem teste de CPU');
+});
+
+test('pressão crítica com queda da CPU pede atenção', () => {
+  const a = avaliar('pressao', resumirComponente('pressao', { estado: estavel(3) }), { distribuicao: { critical: 60 }, quedaCpu: 20 });
   assert.equal(a.status, 'atencao');
+  assert.match(a.motivos.join(' '), /refrigeração está no limite/);
 });
 
 test('veredito geral pega o pior estado', () => {
