@@ -43,6 +43,7 @@ export function analisar(dados) {
       distribuicao: c.info?.distribuicao,
       quedaCpu,
       disparoTemp: dados.protecao?.disparo?.componente === id ? dados.protecao.disparo : null,
+      limiteTemp: dados.protecao?.limites?.ativa ? dados.protecao.limites[id] : undefined,
       saudeDisco: fisico?.avaliacao?.estado,
       avisos,
     });
@@ -214,7 +215,9 @@ export function gerarRelatorio(container, dados) {
       <span class="veredito-icone" aria-hidden="true">${{ ok: '✔', atencao: '!', falha: '✖', na: '?' }[geral.status]}</span>
       <div>
         <strong>${esc(geral.titulo)}</strong>
-        <p>${{
+        <p>${dados.protecao?.disparo && geral.status !== 'falha'
+          ? `O teste parou porque a ${esc(NOMES[dados.protecao.disparo.componente])} passou do limite de ${dados.protecao.disparo.limite} °C que você definiu. Até a parada não houve erros, mas a refrigeração precisa de atenção antes de um teste longo.`
+          : {
           ok: 'Nenhum erro de cálculo, de memória, de imagem ou de dados, e o desempenho se manteve. Para este teste, o sistema se comportou como um computador estável.',
           atencao: 'Não houve erros, mas algo merece atenção (geralmente queda de desempenho por calor). Veja os detalhes abaixo.',
           falha: 'Foram encontrados erros. Um computador estável não erra nesses testes: veja abaixo qual componente falhou e o que fazer.',

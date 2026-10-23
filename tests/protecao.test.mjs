@@ -11,6 +11,10 @@ test('parada por temperatura vira atenção no componente e no veredito geral', 
   assert.equal(a.status, 'atencao');
   assert.match(a.motivos[0], /CPU chegou a 96 °C, acima do limite de 95 °C/);
 
+  // Com a parada, não pode aparecer "sob controle" ao lado do motivo.
+  const comTemp = avaliar('cpu', resumirComponente('cpu', { gflops: serie, tempC: serie.map(() => 73) }), { disparoTemp: disparo });
+  assert.ok(!comTemp.motivos.some((m) => /sob controle/.test(m)), comTemp.motivos.join(' | '));
+
   // GPU quente durante um teste só de memória: o geral também não pode sair "aprovado".
   const analise = analisar({
     componentes: { memoria: { series: { copiaGBs: serie, erros: [0] }, info: {} } },
@@ -47,6 +51,15 @@ test('desligada, registra máximas mas não dispara; sem leitura não faz nada',
   assert.equal(p.disparo, null);
   assert.equal(p.maxima.cpu, 99);
   assert.equal(p.maxima.gpu, null);
+});
+
+test('limite definido pela pessoa vale no veredito quando é mais baixo que o padrão', () => {
+  const serie = Array.from({ length: 30 }, () => 20);
+  const r = resumirComponente('cpu', { gflops: serie, tempC: serie.map(() => 80) });
+  const comLimite = avaliar('cpu', r, { limiteTemp: 75 });
+  assert.equal(comLimite.status, 'atencao');
+  assert.match(comLimite.motivos.join(' '), /limite de 75 °C que você definiu/);
+  assert.equal(avaliar('cpu', r, {}).status, 'ok', 'sem limite próprio, 80 °C está abaixo do padrão de 90 °C');
 });
 
 test('nível para a faixa ao vivo', () => {
