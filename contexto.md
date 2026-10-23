@@ -36,6 +36,37 @@ links. Nenhum código delas foi copiado.
 
 ## Estado atual
 
+- 23/10/2026 — **Android e ranking no ar**: PR [#6](https://github.com/mikerock12/slt-stress-test/pull/6),
+  merge `ac241d5`, CI verde de site/API, Android e plugin. Release
+  [v1.1.0](https://github.com/mikerock12/slt-stress-test/releases/tag/v1.1.0) com APK universal
+  assinado (ARM/ARM64/x86/x86_64), plugin Windows 1.1.0 e checksums. Worker publicado na versão
+  `8aa825da-7d9b-46c2-befc-f773ea679d7e`, D1 `slt-stress-test-benchmarks`
+  (`267f4cce-4746-4234-83e8-66b29d757a5b`), migração `0001_benchmarks.sql` aplicada.
+  Site distingue desktop, Android e iOS; APK é exclusivo do Android. CPU/disco Java,
+  memória C++/NDK fora do heap Java e GPU WebGL2. Interface embarcada, PDF/JSON nativos,
+  sensores com fonte e modo avançado opcional de somente leitura para root já existente.
+- Ranking: contribuição opcional, séries e médias recalculadas no servidor; comparação por
+  hardware/configuração equivalentes e ao menos cinco outros identificadores anônimos.
+  Último teste elegível por identificador/grupo; todos os próprios resultados são excluídos
+  da referência. Sem modelo exato/dados suficientes, informa a ausência; emulação e testes
+  interrompidos/com erros ficam fora das médias. Sem séries sintéticas em produção.
+  Detalhes em [RANKING.md](RANKING.md) e [android/README.md](android/README.md).
+- Validação: 40/40 JS/SQLite; algoritmos Java com corrupção/cancelamento/limpeza; build/lint
+  Android nas quatro ABIs; publish .NET; cada teste e MAX STRESS de 2 min no Chrome e Firefox,
+  relatório, JSON, PDF e estilo de impressão. Mobile Android/iOS 375 px sem rolagem lateral.
+  Android 16: MAX STRESS de 2 min, CPU/memória/disco sem erros, 256 MiB alocados fora do heap
+  Java de 192 MiB, buffers e arquivo removidos. GPU emulada oscilou sob carga; não é referência
+  de desempenho. Sensores e root ainda não conferidos em aparelho físico.
+- Produção conferida: site e ranking dos quatro componentes respondem 200; corpo inválido
+  recebe 400; APK e exe respondem 200; Chrome desktop/mobile sem erros JS. D1 teve recusa
+  temporária 7403 no primeiro comando remoto, resolvida ao repetir a migração. Dump real
+  exportado para backup; não reproduzir links temporários que o Wrangler possa imprimir.
+- Backup em `G:/Meu Drive/Backups/Smells Like Tech - Stress Test/2026-10-23/`, com fontes,
+  bundle Git, APK/exe/checksums, dump D1 e verificações. Hashes dos artefatos conferidos.
+  Chave e senha de assinatura permanecem somente em `.local/assinatura-android/` nesta
+  máquina: a revisão automática recusou a exportação desses segredos sem autorização
+  específica. O backup padrão e o Git não os incluem.
+
 - 22/10/2026 — **No ar**: https://stresstest.smellsliketech.com.br (Cloudflare Workers com
   assets, Worker `slt-stress-test`, versão `f004a75c-7074-4c46-84e6-0b857f62c970`, custom
   domain criado pelo `wrangler deploy`; zona com NS Cloudflare, Registro.br sem mudança).
@@ -113,22 +144,19 @@ links. Nenhum código delas foi copiado.
 
 ## Em andamento
 
-- Codex — branch `feat/android-ranking`, dono dos arquivos compartilhados. API D1, ranking com todas as médias, comparação lado a lado, Android offline com CPU/disco Java e memória NDK implementados. Banco `267f4cce-4746-4234-83e8-66b29d757a5b`: só migração local aplicada. JS/SQLite 39/39; algoritmos Java OK; build/lint Android e publish .NET OK. Chrome e Firefox: cada componente + MAX STRESS de 2 min completos, PDF/JSON e impressão conferidos (GPU Firefox com ressalva de estabilidade). Mobile Android/iOS 375 px OK. Ranking completo validado com dados sintéticos somente no D1 local. Android 16: MAX STRESS NDK de 2 min concluído, CPU/memória/disco sem erros e buffers/arquivo liberados; Android 9 identificou WebView antigo, agora há orientação de atualização. Chave privada em `.local/assinatura-android/`, ignorada; não imprimir. Root opcional só leitura, não testado em aparelho físico com root. Origem reescrita do Wrangler tratada somente em ambiente explícito de desenvolvimento. Ainda falta PR/CI/merge, release v1.1.0, migração remota/deploy e backup.
+- (vazio)
 
-## Próximos passos combinados
+## Conferência em aparelho físico pendente
 
-1. Dono revisa a prévia local (`npm run dev`).
-2. Publicar no Cloudflare Pages + domínio `stresstest.smellsliketech.com.br`
-   (CNAME na zona do Cloudflare; Registro.br só se necessário).
-3. Repositório público no GitHub, commit, push, PR com CI, merge.
-4. Backup no Google Drive.
+- Conferir sensores de diferentes fabricantes, modo root opcional e fluxo de PDF/JSON no celular real. Os testes funcionais completos foram feitos em emulador Android 16.
 
 ## Ideias futuras (não aprovadas)
 
-- Agente local opcional (ex.: lendo sensores do LibreHardwareMonitor) para temperatura e
-  clocks reais no relatório.
 - Teste WebGPU compute como alternativa ao WebGL2.
 
 ## Histórico
 
+- 23/10/2026 — Android/APK e ranking D1 entregues no PR #6, merge `ac241d5`, CI verde nos três
+  jobs, 40/40 testes JS/SQLite, cargas Java e MAX STRESS Android com memória NDK conferidos.
+  Release v1.1.0, produção e backup no Drive atualizados. Sem dados sintéticos em produção.
 - 22/10/2026 — Criação do projeto (AGENTS.md, contexto.md, site completo, testes Node).

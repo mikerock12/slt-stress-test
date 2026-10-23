@@ -24,7 +24,7 @@ o dono troca de agente quando a cota acaba, e quem chega precisa saber onde paro
 ## Mapa
 
 Frontend estático (HTML + CSS + ES modules), sem dependências de execução. API no Cloudflare
-Worker com D1 para benchmarks; APK Android com interface embarcada e cargas Java.
+Worker com D1 para benchmarks; APK Android com interface embarcada e cargas Java/C++ (NDK).
 
 | Caminho | O que é |
 | --- | --- |
@@ -115,9 +115,9 @@ MAX STRESS de 2 min, conferir o relatório, a impressão em PDF e o JSON exporta
   a zona smellsliketech.com.br usa nameservers do Cloudflare, então o Registro.br não muda.
 - Repositório público no GitHub; backup em `G:/Meu Drive/Backups/Smells Like Tech - Stress Test/`.
 
-## Trabalho ativo (23/10/2026)
+## Última entrega (23/10/2026)
 
-Codex, branch feat/android-ranking: Android/APK e ranking persistente no Cloudflare D1.
+PR #6 integrado na main, CI verde de site/API, Android e plugin. Release v1.1.0 e produção publicadas.
 Estado e verificações em contexto.md. Leituras indisponíveis no Android continuam explícitas;
 nunca tratar temperatura da bateria como temperatura de CPU/GPU.
 
@@ -125,3 +125,8 @@ nunca tratar temperatura da bateria como temperatura de CPU/GPU.
 Android: interface embarcada, bridge só com assets do próprio APK; root opcional apenas pelo
 botão nativo e comando fixo somente leitura. Ranking: não misturar motores, configurações,
 frequências desconhecidas e medidas; envio opt-in, sem séries sintéticas no banco de produção.
+Emuladores identificados ficam fora das médias de hardware físico. A chave e a senha de
+assinatura em `.local/assinatura-android/` são privadas: não imprimir, versionar nem copiar
+para a nuvem sem autorização específica. O backup padrão exclui esses arquivos.
+Backup de fontes, histórico, release e dump D1 conferido em
+`G:/Meu Drive/Backups/Smells Like Tech - Stress Test/2026-10-23/`.
