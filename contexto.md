@@ -73,6 +73,15 @@ links. Nenhum código delas foi copiado.
   pessoa clicar em Permitir. Corrigido no PR #2 (deploy `0baa3cb3-3d2c-4b9f-a1c4-419b8730cf11`):
   com a permissão pendente o site espera até 60 s e mostra como permitir; se negada, como
   liberar. Aguardando o dono clicar em Permitir para concluir o teste ponta a ponta.
+- 22/10/2026 — **Teste em produção concluído** no Chrome 156 do dono após "Permitir": plugin
+  conectado (permissão `granted`), MAX STRESS de 2 min com disco real no D: (256 MiB), sem
+  erros. CPU 3,49 GHz estimado × 3,30 GHz sensor; GPU 10 FPS a 720p com uso 100%; memória
+  2133 MT/s; disco 113/126 MB/s leitura seq., ~160 IOPS 4K, 34 °C; SMART "Bom" nos dois
+  discos; arquivo temporário apagado. Veredito "Aprovado com ressalvas" só por causa da
+  Compute Pressure em "critical" 100% do tempo, o que é esperado sob carga total (ver
+  próximo passo).
+- Próximo passo sugerido: a pressão "critical" sozinha não deveria rebaixar o veredito
+  geral; só junto com queda de desempenho.
 
 ## Em andamento
 
