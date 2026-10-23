@@ -12,6 +12,8 @@ import { sparkline } from './graficos.js';
 import { gerarRelatorio } from './relatorio.js';
 import { DOWNLOAD, MonitorSensores, detectarPlugin, lerDiscos, permissaoRedeLocal, resumoMemoria } from './plugin.js';
 import { LIMITES_PADRAO, ProtecaoTemperatura, nivel, normalizarLimites } from './protecao.js';
+import { DOWNLOAD_APK, inventarioAndroid, MonitorAndroid, TesteAndroid } from './android.js';
+import { iniciarRanking } from './ranking.js';
 
 const CLASSES = { cpu: TesteCPU, gpu: TesteGPU, memoria: TesteMemoria, disco: TesteDisco, pressao: MonitorPressao };
 const ORDEM = ['cpu', 'gpu', 'memoria', 'disco'];
@@ -21,12 +23,34 @@ let sistema = null;
 let execucao = null;
 let plugin = null;
 let procurandoPlugin = null;
+let android = null;
 
 // ---------- Início ----------
 
 async function mostrarSistema() {
   sistema = await coletarSistema();
+  android = inventarioAndroid();
+  sistema.android = android;
+  const movel = sistema.dispositivo.tipo === 'celular';
+  document.body.dataset.dispositivo = sistema.dispositivo.tipo;
+  $('#tipo-dispositivo').textContent = movel ? `Celular / tablet · ${sistema.dispositivo.plataforma}` : 'Computador · desktop';
+  if (movel) {
+    $('#titulo-hero').textContent = 'Coloque seu celular no limite e conheça seu desempenho.';
+    document.querySelector('[name=gpuRes]').value = '1280x720';
+    document.querySelector('[name=memMiB]').value = '256';
+    document.querySelector('[name=discoMiB]').value = '256';
+    document.querySelector('input[name=duracao][value="120"]').checked = true;
+  }
+  $('#android').hidden = !movel;
+  $('#plugin').hidden = sistema.so !== 'Windows';
+  $('#android-conteudo').textContent = android ? `Aplicativo conectado: ${android.marca} ${android.modelo}. CPU, memória e armazenamento usam testes nativos. GPU usa WebGL2 com verificação de imagem.`
+    : sistema.dispositivo.android ? 'Instale o APK e abra o SLT Stress Test para testar CPU, memória e armazenamento nativamente, além da GPU. O app coleta identificação e os sensores que seu aparelho disponibiliza.'
+      : 'No iPhone/iPad, os testes disponíveis rodam no navegador. Um APK é exclusivo do Android e não pode ser instalado no iOS.';
+  $('#btn-baixar-apk').hidden = !sistema.dispositivo.android || !!android;
+  $('#btn-baixar-apk').href = DOWNLOAD_APK;
+  if (android) $('#android-dados').textContent = JSON.stringify(android, null, 2);
   const linhas = [
+    ['Dispositivo', android ? `${android.marca} ${android.modelo}` : sistema.dispositivo.tipo === 'celular' ? 'Celular / tablet' : 'Computador'],
     ['Processador', sistema.threads ? `${sistema.threads} threads lógicas` : 'não informado'],
     ['Memória', sistema.memoriaGB ? `${sistema.memoriaGB >= 8 ? '8 GB ou mais' : `~${sistema.memoriaGB} GB`}` : 'não informada'],
     ['GPU', sistema.gpu],
@@ -49,7 +73,7 @@ async function mostrarSistema() {
 
   const avisos = [];
   if (!sistema.webgl2) { desativarCard('gpu', 'WebGL2 indisponível'); avisos.push('GPU: o navegador não oferece WebGL2 (ative a aceleração por hardware).'); }
-  if (!sistema.opfs) { desativarCard('disco', 'OPFS indisponível'); avisos.push('Disco: o navegador não oferece o armazenamento OPFS.'); }
+  if (!sistema.opfs && !android) { desativarCard('disco', 'OPFS indisponível'); avisos.push('Disco: o navegador não oferece o armazenamento OPFS.'); }
   if (sistema.bateria && !sistema.bateria.carregando) avisos.push('Seu aparelho está na bateria: ligue na tomada para o resultado refletir o desempenho máximo.');
   if (avisos.length) {
     const el = $('#aviso-compat');
@@ -90,6 +114,7 @@ async function atualizarPlugin() {
 }
 
 function procurarPlugin() {
+  if (sistema?.so !== 'Windows') return;
   atualizarPlugin();
   if (!procurandoPlugin) procurandoPlugin = setInterval(() => { if (!execucao) atualizarPlugin(); }, 4000);
 }
@@ -140,6 +165,12 @@ function mostrarTemperaturas(temps, limites) {
 
 function mostrarPlugin() {
   const caixa = $('#plugin-estado');
+  if (sistema?.so !== 'Windows') {
+    caixa.innerHTML = android ? '<p><strong>Aplicativo Android conectado.</strong> Veja os dados e fontes na seção Aplicativo.</p>' : '<p>Testes no navegador. Consulte a seção Aplicativo para os recursos nativos do seu sistema.</p>';
+    $('#protecao').hidden = !android;
+    if (android) $('#protecao-nota').textContent = 'A proteção de CPU/GPU funciona quando o fabricante permite ler esses sensores. O aplicativo também interrompe as cargas em estado térmico crítico ou bateria a 45 °C. Temperatura da bateria é uma leitura separada.';
+    return;
+  }
   const alvo = $('#disco-alvo');
   $('#protecao').hidden = !plugin;
   if (plugin) {
@@ -303,6 +334,7 @@ async function executar(ids, duracaoS, modo) {
     eventos: [],
     componentes: {},
     opcoes,
+    compartilhar: $('#compartilhar-benchmark').checked,
   };
   document.body.classList.add('rodando');
   $('#relatorio').hidden = true;
@@ -321,7 +353,11 @@ async function executar(ids, duracaoS, modo) {
   registrar('log', `${modo} iniciado: ${ids.map((i) => NOMES[i]).join(', ')} · ${duracaoS ? formatarDuracao(duracaoS) : 'sem limite de tempo'}.`);
 
   const discoReal = ids.includes('disco') && opcoes.disco.unidade !== 'navegador';
-  if (plugin) {
+  if (android) {
+    execucao.monitor = new MonitorAndroid(); execucao.monitor.iniciar();
+    execucao.protecao = new ProtecaoTemperatura(limitesDaTela());
+    registrar('log', 'Aplicativo Android: testes nativos e sensores disponíveis ativos.');
+  } else if (plugin) {
     let discos = [];
     try { discos = await lerDiscos(); } catch { /* segue sem o mapa de discos */ }
     execucao.monitor = new MonitorSensores(plugin, {
@@ -344,7 +380,7 @@ async function executar(ids, duracaoS, modo) {
 
   await Promise.all(todos.map(async (id) => {
     const Classe = id === 'disco' && discoReal ? TesteDiscoPlugin : CLASSES[id];
-    const inst = new Classe();
+    const inst = android && ['cpu', 'memoria', 'disco'].includes(id) ? new TesteAndroid(id) : new Classe();
     const comp = { instancia: inst, series: {}, iniciado: false };
     execucao.componentes[id] = comp;
     try {
@@ -364,6 +400,15 @@ function tique() {
   const ex = execucao;
   if (!ex) return;
   const decorrido = (performance.now() - ex.t0) / 1000;
+  if (android && ex.monitor?.ultima?.paradaTermica) {
+    registrar('erro', ex.monitor.ultima.paradaTermica);
+    ex.interrupcaoAndroid = ex.monitor.ultima.paradaTermica;
+    finalizar(`Proteção Android: ${ex.monitor.ultima.paradaTermica}`); return;
+  }
+  if (android && ex.monitor?.ultima?.interrupcao) {
+    ex.interrupcaoAndroid = ex.monitor.ultima.interrupcao;
+    finalizar(ex.interrupcaoAndroid); return;
+  }
   if (ex.monitor?.desconectado && !ex.avisouPlugin) {
     ex.avisouPlugin = true;
     registrar('erro', 'O plugin parou de responder: os sensores reais saíram do teste.');
@@ -423,7 +468,7 @@ async function finalizar(motivo) {
   await Promise.all(Object.values(ex.componentes).map((c) => c.instancia.parar().catch(() => {})));
   try { await ex.wakeLock?.release(); } catch { /* já liberado */ }
   let saudeDiscos = null;
-  if (ex.monitor) {
+  if (ex.monitor && !android) {
     try { saudeDiscos = await lerDiscos(); } catch { /* plugin fechado */ }
   }
 
@@ -450,7 +495,13 @@ async function finalizar(motivo) {
     ids: ex.ids,
     componentes,
     eventos: ex.eventos,
-    plugin: ex.monitor ? { versao: plugin?.versao, pawnio: plugin?.pawnio, administrador: plugin?.administrador, cpu: plugin?.cpu, memoria: resumoMemoria(plugin?.memoria) } : null,
+    plugin: plugin && ex.monitor ? { versao: plugin?.versao, pawnio: plugin?.pawnio, administrador: plugin?.administrador, cpu: plugin?.cpu, memoria: resumoMemoria(plugin?.memoria) } : null,
+    inventario: plugin,
+    android,
+    sensoresAndroid: android ? ex.monitor?.ultima : null,
+    interrupcaoAndroid: ex.interrupcaoAndroid,
+    compartilhar: ex.compartilhar,
+    oculta: ex.oculta,
     saudeDiscos,
     protecao: ex.protecao ? { limites: ex.protecao.limites, maxima: ex.protecao.maxima, disparo: ex.protecao.disparo } : null,
   });
@@ -473,6 +524,7 @@ $('#btn-parar').addEventListener('click', () => finalizar('Parado pelo usuário'
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && execucao) finalizar('Parado pelo usuário (Esc)'); });
 document.addEventListener('visibilitychange', () => {
   if (!execucao) return;
+  if (document.hidden) execucao.oculta = true;
   registrar('log', document.hidden ? 'Aba escondida: o teste de GPU fica pausado até você voltar.' : 'Aba visível novamente.');
 });
 window.addEventListener('beforeunload', (e) => { if (execucao) { e.preventDefault(); e.returnValue = ''; } });
@@ -482,8 +534,13 @@ document.addEventListener('slt:novo-teste', () => {
 });
 
 prepararProtecao();
+iniciarRanking();
 mostrarSistema().then(() => {
   mostrarPlugin();
+  for (const b of document.querySelectorAll('#btn-selecionados, #btn-max')) b.disabled = false;
   const local = ['localhost', '127.0.0.1'].includes(location.hostname);
-  if (pluginJaUsado() || local) procurarPlugin();
+  if (sistema.so === 'Windows' && (pluginJaUsado() || local)) procurarPlugin();
+}).catch(() => {
+  $('#aviso-compat').hidden = false;
+  $('#aviso-compat').textContent = 'Não foi possível identificar os recursos do aparelho. Atualize o navegador e recarregue a página.';
 });

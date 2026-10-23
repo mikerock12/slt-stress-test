@@ -17,6 +17,13 @@ e `http://localhost:5173` em desenvolvimento).
 
 Os `POST` exigem o cabeçalho `X-SLT-Plugin` (força o preflight CORS).
 
+Extensão compatível de 23/10/2026: `/v1/ola` também devolve `cpuDetalhes` com fabricante,
+modelo e frequência nominal `Win32_Processor.MaxClockSpeed` em MHz; não confundir com o
+clock instantâneo dos sensores. `/v1/discos` acrescenta `fabricante` quando o Windows
+informa um fabricante específico. Sem dados, campo ausente. Protocolo continua 1.
+O site usa esses dados para identificar grupos equivalentes no ranking, somente quando
+a pessoa escolhe contribuir. O plugin continua sem enviar dados para a internet.
+
 ## Compilar
 
 ```bash

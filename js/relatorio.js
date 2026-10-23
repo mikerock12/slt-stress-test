@@ -3,6 +3,7 @@ import { METRICAS, NOMES, avaliar, resumirComponente, vereditoGeral } from './av
 import { formatarDuracao, formatarNumero } from './metricas.js';
 import { graficoRelatorio } from './graficos.js';
 import { DOWNLOAD } from './plugin.js';
+import { integrarComparacao } from './ranking.js';
 
 const ESTADOS_DISCO = { bom: 'Bom', cuidado: 'Cuidado', ruim: 'Ruim' };
 const FASES_CDM = [
@@ -59,6 +60,10 @@ export function analisar(dados) {
   if (dados.protecao?.disparo && geral.status !== 'falha') {
     geral.status = 'atencao';
     geral.titulo = 'Interrompido pela proteção de temperatura';
+  }
+  if (dados.interrupcaoAndroid && geral.status !== 'falha') {
+    geral.status = 'atencao';
+    geral.titulo = 'Teste interrompido no Android';
   }
   return { geral, componentes };
 }
@@ -215,7 +220,7 @@ export function gerarRelatorio(container, dados) {
       <span class="veredito-icone" aria-hidden="true">${{ ok: '✔', atencao: '!', falha: '✖', na: '?' }[geral.status]}</span>
       <div>
         <strong>${esc(geral.titulo)}</strong>
-        <p>${dados.protecao?.disparo && geral.status !== 'falha'
+        <p>${dados.interrupcaoAndroid && geral.status !== 'falha' ? esc(dados.interrupcaoAndroid) : dados.protecao?.disparo && geral.status !== 'falha'
           ? `O teste parou porque a ${esc(NOMES[dados.protecao.disparo.componente])} passou do limite de ${dados.protecao.disparo.limite} °C que você definiu. Até a parada não houve erros, mas a refrigeração precisa de atenção antes de um teste longo.`
           : {
           ok: 'Nenhum erro de cálculo, de memória, de imagem ou de dados, e o desempenho se manteve. Para este teste, o sistema se comportou como um computador estável.',
@@ -230,7 +235,7 @@ export function gerarRelatorio(container, dados) {
 
     ${cdm || saude ? `<div class="grade-dupla">${cdm}${saude}</div>` : ''}
 
-    ${sensoresReais ?? `<article class="cartao indisponivel">
+    ${dados.android ? `<article class="cartao"><h3>Dados nativos do Android</h3><p>CPU, memória e armazenamento usam cargas nativas. A GPU usa WebGL2. Leituras disponíveis e suas fontes:</p><pre>${esc(JSON.stringify({ inventario: dados.android, sensoresFinais: dados.sensoresAndroid }, null, 2))}</pre><p class="nota">A temperatura da bateria não é a temperatura da CPU/GPU. Valores ausentes não foram estimados.</p></article>` : sensoresReais ?? `<article class="cartao indisponivel">
       <h3>Temperatura e clocks reais</h3>
       <p>Por segurança, o navegador não deixa sites lerem sensores. Por isso <strong>temperatura média,
         clock real da GPU e frequência da memória não aparecem aqui</strong> e não foram inventados.
@@ -278,9 +283,10 @@ export function gerarRelatorio(container, dados) {
   }
 
   const texto = textoResumo(dados, analise);
+  integrarComparacao(container, dados);
   container.querySelector('.relatorio-acoes').addEventListener('click', async (e) => {
     const acao = e.target.closest('[data-acao]')?.dataset.acao;
-    if (acao === 'pdf') window.print();
+    if (acao === 'pdf') { if (dados.android) globalThis.SLTAndroid.imprimir(); else window.print(); }
     if (acao === 'novo') document.dispatchEvent(new CustomEvent('slt:novo-teste'));
     if (acao === 'copiar') {
       try { await navigator.clipboard.writeText(texto); e.target.textContent = 'Copiado!'; }
@@ -289,6 +295,7 @@ export function gerarRelatorio(container, dados) {
     }
     if (acao === 'json') {
       const json = JSON.stringify({ versao: 1, ...dados, analise }, null, 2);
+      if (dados.android) { globalThis.SLTAndroid.exportar(json); return; }
       const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
       const a = document.createElement('a');
       a.href = url;

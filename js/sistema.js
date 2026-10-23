@@ -1,4 +1,5 @@
 // Informações do sistema que o navegador expõe (sem permissões especiais).
+import { detectarDispositivo } from './dispositivo.js';
 
 function nomeNavegador() {
   const marcas = navigator.userAgentData?.brands?.filter((b) => !/Not.?A.?Brand|Chromium/i.test(b.brand));
@@ -14,9 +15,9 @@ function sistemaOperacional() {
   const p = navigator.userAgentData?.platform || navigator.platform || '';
   const ua = navigator.userAgent;
   if (/Win/i.test(p)) return 'Windows';
-  if (/Mac/i.test(p)) return 'macOS';
   if (/Android/i.test(ua)) return 'Android';
-  if (/iPhone|iPad/i.test(ua)) return 'iOS';
+  if (detectarDispositivo().ios) return 'iOS';
+  if (/Mac/i.test(p)) return 'macOS';
   if (/Linux/i.test(p)) return 'Linux';
   return p || 'Desconhecido';
 }
@@ -45,6 +46,7 @@ export function limparRenderer(nome = '') {
 export async function coletarSistema() {
   const gpu = gpuRenderer();
   const info = {
+    dispositivo: detectarDispositivo(),
     navegador: nomeNavegador(),
     so: sistemaOperacional(),
     threads: navigator.hardwareConcurrency || null,

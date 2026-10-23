@@ -23,7 +23,8 @@ o dono troca de agente quando a cota acaba, e quem chega precisa saber onde paro
 
 ## Mapa
 
-Site estático, sem build e sem dependências de execução (HTML + CSS + ES modules).
+Frontend estático (HTML + CSS + ES modules), sem dependências de execução. API no Cloudflare
+Worker com D1 para benchmarks; APK Android com interface embarcada e cargas Java.
 
 | Caminho | O que é |
 | --- | --- |
@@ -44,6 +45,10 @@ Site estático, sem build e sem dependências de execução (HTML + CSS + ES mod
 | `tests/*.test.mjs` | `node --test` das partes puras |
 | `scripts/servidor.mjs` | Servidor local de desenvolvimento (porta 5173) |
 | `_headers` | Cabeçalhos do Cloudflare Pages |
+| `worker/index.js` / `migrations/` | API de benchmarks/ranking e migrações D1 |
+| `js/benchmark.js` / `js/ranking.js` | Contrato validado no servidor, grupos comparáveis e UI |
+| `js/dispositivo.js` / `js/android.js` | Detecção celular/desktop e bridge com APK |
+| `android/` | APK com CPU/memória/disco nativos e WebGL2; ver `android/README.md` |
 
 ### Contrato dos testes
 
@@ -67,6 +72,8 @@ npm test          # node --test das funções puras
 npm run check     # sintaxe de todos os .js + testes
 npm run dev       # http://localhost:5173
 npm run build     # dist/ só com o que vai ao ar
+npm run dev:api   # site + Worker + D1 local em 8787
+node scripts/testar-cargas-android.mjs # algoritmos Java, JDK 17+
 dotnet publish plugin/SLTStressTest.Plugin -c Release -o plugin/publicado
 ```
 
@@ -101,9 +108,20 @@ MAX STRESS de 2 min, conferir o relatório, a impressão em PDF e o JSON exporta
 
 ## Publicação
 
-- Hospedagem: Cloudflare Workers com assets estáticos (o Pages foi incorporado ao Workers),
+- Hospedagem: Cloudflare Workers com assets estáticos, API e D1 (o Pages foi incorporado ao Workers),
   Worker `slt-stress-test`, configuração em `wrangler.jsonc`. Publicar a partir da `main`:
-  `npm run deploy` (monta `dist/` e roda `wrangler deploy`). O domínio
+  `npm run db:migrar` e `npm run deploy` (monta `dist/` e roda `wrangler deploy`). O domínio
   `stresstest.smellsliketech.com.br` é um custom domain do Worker, criado pelo próprio deploy;
   a zona smellsliketech.com.br usa nameservers do Cloudflare, então o Registro.br não muda.
 - Repositório público no GitHub; backup em `G:/Meu Drive/Backups/Smells Like Tech - Stress Test/`.
+
+## Trabalho ativo (23/10/2026)
+
+Codex, branch feat/android-ranking: Android/APK e ranking persistente no Cloudflare D1.
+Estado e verificações em contexto.md. Leituras indisponíveis no Android continuam explícitas;
+nunca tratar temperatura da bateria como temperatura de CPU/GPU.
+
+
+Android: interface embarcada, bridge só com assets do próprio APK; root opcional apenas pelo
+botão nativo e comando fixo somente leitura. Ranking: não misturar motores, configurações,
+frequências desconhecidas e medidas; envio opt-in, sem séries sintéticas no banco de produção.

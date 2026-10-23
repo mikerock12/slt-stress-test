@@ -24,6 +24,7 @@
     <nav aria-label="Seções">
       <a href="#configurar">Testar</a>
       <a href="#plugin">Plugin</a>
+      <a href="#ranking">Ranking</a>
       <a href="#como-funciona">Como funciona</a>
       <a href="#creditos">Créditos</a>
     </nav>
@@ -33,7 +34,8 @@
     <section id="inicio" class="hero">
       <div class="hero-texto">
         <p class="selo">Gratuito · sem instalar nada · roda no seu navegador</p>
-        <h1>Coloque seu PC no limite e descubra se ele aguenta.</h1>
+        <p class="selo" id="tipo-dispositivo">Detectando dispositivo…</p>
+        <h1 id="titulo-hero">Coloque seu PC no limite e descubra se ele aguenta.</h1>
         <p class="lead">Testes de estresse inspirados no Prime95, FurMark, MemTest86 e CrystalDiskMark.
           Rode um componente por vez ou tudo junto no <strong>MAX STRESS</strong> e receba um relatório
           claro: o que foi medido, se houve erro e se o desempenho caiu com o calor.</p>
@@ -137,9 +139,11 @@
       </div>
 
       <h2><span class="passo">3</span> Iniciar</h2>
+      <label class="concordo"><input type="checkbox" id="compartilhar-benchmark"> Contribuir com este benchmark para o ranking público</label>
+      <p class="nota">Ao marcar, serão publicados o hardware identificado, configurações e séries numéricas completas dos testes. Sem nome, e-mail, número de série ou caminhos locais. Um identificador aleatório no navegador evita contar seus testes repetidos como várias pessoas. Sem marcar, o site consulta a média sem guardar o teste.</p>
       <div class="iniciar">
-        <button type="button" class="botao" id="btn-selecionados">Testar selecionados</button>
-        <button type="button" class="botao max" id="btn-max">🔥 MAX STRESS<small>CPU + GPU + memória + disco ao mesmo tempo</small></button>
+        <button type="button" class="botao" id="btn-selecionados" disabled>Testar selecionados</button>
+        <button type="button" class="botao max" id="btn-max" disabled>🔥 MAX STRESS<small>CPU + GPU + memória + disco ao mesmo tempo</small></button>
       </div>
       <p class="nota" id="aviso-compat" hidden></p>
     </section>
@@ -168,6 +172,36 @@
     </section>
 
     <section id="relatorio" class="bloco" hidden></section>
+
+    <section id="android" class="bloco" hidden>
+      <article class="cartao">
+        <p class="selo">Celular / tablet</p><h2>Aplicativo Android</h2>
+        <p id="android-conteudo"></p>
+        <a class="botao primario" id="btn-baixar-apk" href="#">Baixar aplicativo Android (.apk)</a>
+        <p class="nota">Android 8 ou mais recente e Android System WebView/Chrome atualizado (110+). Após baixar, abra o APK, autorize a instalação pelo navegador e abra o aplicativo. Não exige conta nem root. O Android e cada fabricante determinam quais sensores podem ser lidos; o app tenta as fontes disponíveis e explica ausências. SMART e acesso a toda a RAM física podem exigir ferramentas privilegiadas. CPU/GPU, frequência por núcleo, bateria e estado térmico são identificados separadamente.</p>
+        <details><summary>Identificação, fontes e disponibilidade</summary><pre id="android-dados">Abra o aplicativo para coletar os dados nativos.</pre></details>
+        <p class="nota">Aparelho já com root? No aplicativo, o botão “Sensores avançados” tenta ler também as fontes protegidas do fabricante, mediante autorização no seu gerenciador de root. O modo é opcional, somente de leitura e não instala root.</p>
+      </article>
+    </section>
+
+    <section id="ranking" class="bloco nao-imprimir">
+      <h2>Ranking da comunidade</h2>
+      <p>CPU, GPU, HDD, SSD e memória separados por hardware e configuração. A média de referência precisa de pelo menos 5 contribuintes. Resultados enviados pela comunidade, sem certificação.</p>
+      <form id="ranking-filtros" class="ranking-filtros">
+        <label>Componente <select name="componente"><option value="cpu">CPU</option><option value="gpu">GPU</option><option value="disco">Armazenamento</option><option value="memoria">Memória</option></select></label>
+        <label>Tipo <select name="tipo"><option value="">Todos</option><option>HDD</option><option>SSD</option><option>Flash</option><option>DDR3</option><option>DDR4</option><option>DDR5</option></select></label>
+        <label>Marca <input name="marca" maxlength="240" placeholder="Marca exata"></label>
+        <label>Modelo <input name="modelo" maxlength="240" placeholder="Modelo exato"></label>
+        <label>Frequência <input name="frequencia" type="number" min="1" placeholder="MHz ou MT/s"></label>
+        <button type="submit" class="botao primario">Filtrar</button>
+        <button type="button" class="botao" id="ranking-abrir">Carregar ranking</button>
+      </form>
+      <div id="ranking-resultados" aria-live="polite"><p>Carregue o ranking para consultar as contribuições.</p></div>
+      <div class="acoes"><button type="button" class="botao" id="ranking-anterior" disabled>Anterior</button><button type="button" class="botao" id="ranking-proximo" disabled>Próxima</button></div>
+      <h3>Comparar dois testes completos</h3>
+      <form id="comparar-ids" class="ranking-filtros"><label>Primeiro identificador <input name="a" required maxlength="36"></label><label>Segundo identificador <input name="b" required maxlength="36"></label><button class="botao" type="submit">Comparar um a um</button></form>
+      <div id="comparar-resultados" aria-live="polite"></div>
+    </section>
 
     <section id="plugin" class="bloco">
       <div class="cartao plugin-cartao">

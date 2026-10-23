@@ -63,6 +63,7 @@ public sealed class Servidor(Sensores sensores, BenchmarkDisco benchmark) : IAsy
             administrador = Inventario.EhAdministrador(),
             pawnio = Inventario.PawnIoInstalado(),
             cpu = sensores.NomeCpu,
+            cpuDetalhes = Inventario.Cpu(),
             gpus = sensores.NomesGpu,
             memoria = Inventario.Pentes(),
         }));

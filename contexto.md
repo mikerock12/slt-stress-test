@@ -1,6 +1,6 @@
 # Contexto do projeto — SLT Stress Test
 
-Atualizado em 22/10/2026, horário de Brasília (America/Sao_Paulo).
+Atualizado em 23/10/2026, horário de Brasília (America/Sao_Paulo).
 Cópia principal: `D:/PROJETOS/SLTStressTest`. Regras de trabalho em [AGENTS.md](AGENTS.md).
 
 ## Objetivo
@@ -113,7 +113,7 @@ links. Nenhum código delas foi copiado.
 
 ## Em andamento
 
-- (vazio)
+- Codex — branch `feat/android-ranking`, dono dos arquivos compartilhados. API D1, ranking com todas as médias, comparação lado a lado, Android offline com CPU/disco Java e memória NDK implementados. Banco `267f4cce-4746-4234-83e8-66b29d757a5b`: só migração local aplicada. JS/SQLite 39/39; algoritmos Java OK; build/lint Android e publish .NET OK. Chrome e Firefox: cada componente + MAX STRESS de 2 min completos, PDF/JSON e impressão conferidos (GPU Firefox com ressalva de estabilidade). Mobile Android/iOS 375 px OK. Ranking completo validado com dados sintéticos somente no D1 local. Android 16: MAX STRESS NDK de 2 min concluído, CPU/memória/disco sem erros e buffers/arquivo liberados; Android 9 identificou WebView antigo, agora há orientação de atualização. Chave privada em `.local/assinatura-android/`, ignorada; não imprimir. Root opcional só leitura, não testado em aparelho físico com root. Origem reescrita do Wrangler tratada somente em ambiente explícito de desenvolvimento. Ainda falta PR/CI/merge, release v1.1.0, migração remota/deploy e backup.
 
 ## Próximos passos combinados
 
