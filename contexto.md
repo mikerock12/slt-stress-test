@@ -80,8 +80,11 @@ links. Nenhum código delas foi copiado.
   discos; arquivo temporário apagado. Veredito "Aprovado com ressalvas" só por causa da
   Compute Pressure em "critical" 100% do tempo, o que é esperado sob carga total (ver
   próximo passo).
-- Próximo passo sugerido: a pressão "critical" sozinha não deveria rebaixar o veredito
-  geral; só junto com queda de desempenho.
+- 22/10/2026 — Corrigido (PR #3, CI verde, deploy `3d33c951-5899-4b36-9356-fb0c8d79b39f`):
+  pressão crítica só pede atenção junto com queda da CPU >= 12%; sem queda, o relatório
+  explica que é o esperado sob carga total. Conferido em produção no Chrome do dono com o
+  módulo publicado: sem queda → "Aprovado: sistema estável"; com 33% de queda → "Aprovado com
+  ressalvas". JS 19/19.
 
 ## Em andamento
 
