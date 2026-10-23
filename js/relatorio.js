@@ -236,7 +236,19 @@ export function gerarRelatorio(container, dados) {
 
     ${cdm || saude ? `<div class="grade-dupla">${cdm}${saude}</div>` : ''}
 
-    ${dados.android ? `<article class="cartao"><h3>Dados nativos do Android</h3><p>CPU, memória e armazenamento usam cargas nativas. A GPU usa WebGL2. Leituras disponíveis e suas fontes:</p><pre>${esc(JSON.stringify({ inventario: dados.android, sensoresFinais: dados.sensoresAndroid }, null, 2))}</pre><p class="nota">A temperatura da bateria não é a temperatura da CPU/GPU. Valores ausentes não foram estimados.</p></article>` : sensoresReais ?? `<article class="cartao indisponivel">
+    ${dados.android ? `<article class="cartao"><h3>Dados nativos do Android</h3>
+      <p>${esc(dados.android.marca)} ${esc(dados.android.modelo)} · Android ${esc(dados.android.android)}.
+        CPU, memória e armazenamento usam cargas nativas. A GPU usa WebGL2.</p>
+      ${dados.android.emulado ? '<p class="alerta">Ambiente emulado: serve para validar o funcionamento e fica fora das médias de hardware físico.</p>' : ''}
+      <dl class="lista-sistema">
+        <div><dt>Processador / SoC</dt><dd>${esc(dados.android.cpu?.modelo || 'não disponível')}</dd></div>
+        <div><dt>RAM informada pelo Android</dt><dd>${Number.isFinite(dados.android.memoria?.totalGB) ? `${formatarNumero(dados.android.memoria.totalGB, 2)} GiB` : 'não disponível'}</dd></div>
+        <div><dt>Frequência da RAM</dt><dd>${dados.android.memoria?.frequenciaMTs ? `${formatarNumero(dados.android.memoria.frequenciaMTs, 0)} MT/s` : 'não disponível'}</dd></div>
+        <div><dt>Temperatura da bateria</dt><dd>${Number.isFinite(dados.sensoresAndroid?.bateria?.tempC) ? `${formatarNumero(dados.sensoresAndroid.bateria.tempC, 1)} °C` : 'não disponível'}</dd></div>
+      </dl>
+      <p class="nota">Temperatura da bateria é uma leitura separada da CPU/GPU. Sensores dependem do fabricante; valores ausentes não foram estimados. Modelo dos chips de memória e SMART não são expostos pela API pública do Android.</p>
+      <details><summary>Todos os dados coletados e suas fontes</summary><pre>${esc(JSON.stringify({ inventario: dados.android, sensoresFinais: dados.sensoresAndroid }, null, 2))}</pre></details>
+    </article>` : sensoresReais ?? `<article class="cartao indisponivel">
       <h3>Temperatura e clocks reais</h3>
       <p>Por segurança, o navegador não deixa sites lerem sensores. Por isso <strong>temperatura média,
         clock real da GPU e frequência da memória não aparecem aqui</strong> e não foram inventados.
