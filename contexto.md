@@ -102,6 +102,14 @@ links. Nenhum código delas foi copiado.
   conferido o caminho "rede local bloqueada" (navegador embutido do app, que nega a
   permissão): aviso correto. A conferência visual com o plugin no Chrome do dono ficou
   pendente porque a extensão Claude in Chrome desconectou.
+- 22/10/2026 — Conferido em produção no Chrome do dono (plugin conectado, permissão
+  `granted`, leituras de CPU simuladas, limite 75 °C): bloco de limites com aviso do PawnIO,
+  faixa ao vivo (CPU vermelha no limite, GPU "sem leitura" na HD 530), parada aos 76–79 °C.
+  A conferência achou incoerências no relatório, corrigidas no PR #5 (CI verde, deploy
+  `5451b61e-ddff-488f-a840-9ca659e1d154`): sem "temperatura sob controle" quando houve
+  parada; limite da pessoa vale no veredito quando é menor que o padrão; texto próprio do
+  veredito; `.alerta` global. Reconferido em produção. Limite do dono restaurado para 95 °C.
+  JS 26/26.
 
 ## Em andamento
 
