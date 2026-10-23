@@ -139,8 +139,8 @@
       </div>
 
       <h2><span class="passo">3</span> Iniciar</h2>
-      <label class="concordo"><input type="checkbox" id="compartilhar-benchmark"> Contribuir com este benchmark para o ranking público</label>
-      <p class="nota">Ao marcar, serão publicados o hardware identificado, configurações e séries numéricas completas dos testes. Sem nome, e-mail, número de série ou caminhos locais. Um identificador aleatório no navegador evita contar seus testes repetidos como várias pessoas. Sem marcar, o site consulta a média sem guardar o teste.</p>
+      <label class="concordo"><input type="checkbox" id="compartilhar-benchmark"> Autorizo publicar este benchmark no ranking público por até 12 meses</label>
+      <p class="nota">Ao marcar, serão publicados o hardware identificado, configurações e séries numéricas completas dos testes. Sem nome, e-mail, número de série ou caminhos locais. Uma chave aleatória no navegador distingue contribuições repetidas. Sem marcar, o site consulta a API para comparar sem guardar o teste. A contribuição é opcional. <a href="/privacidade.html">Privacidade, exportação e exclusão das contribuições</a>.</p>
       <div class="iniciar">
         <button type="button" class="botao" id="btn-selecionados" disabled>Testar selecionados</button>
         <button type="button" class="botao max" id="btn-max" disabled>🔥 MAX STRESS<small>CPU + GPU + memória + disco ao mesmo tempo</small></button>
@@ -177,7 +177,8 @@
       <article class="cartao">
         <p class="selo">Celular / tablet</p><h2>Aplicativo Android</h2>
         <p id="android-conteudo"></p>
-        <a class="botao primario" id="btn-baixar-apk" href="#">Baixar aplicativo Android (.apk)</a>
+        <a class="botao primario" id="btn-baixar-apk" href="/assets/downloads/SLTStressTest-v1.2.0.apk" download="SLTStressTest-v1.2.0.apk">Baixar aplicativo Android (.apk)</a>
+        <p class="nota">Download direto deste site: versão 1.2.0. Se um download anterior ficou em 100%, cancele essa tentativa e baixe novamente pelo botão acima. Confira o arquivo na pasta Downloads do celular.</p>
         <p class="nota">Android 8 ou mais recente e Android System WebView/Chrome atualizado (110+). Após baixar, abra o APK, autorize a instalação pelo navegador e abra o aplicativo. Não exige conta nem root. O Android e cada fabricante determinam quais sensores podem ser lidos; o app tenta as fontes disponíveis e explica ausências. SMART e acesso a toda a RAM física podem exigir ferramentas privilegiadas. CPU/GPU, frequência por núcleo, bateria e estado térmico são identificados separadamente.</p>
         <details><summary>Identificação, fontes e disponibilidade</summary><pre id="android-dados">Abra o aplicativo para coletar os dados nativos.</pre></details>
         <p class="nota">Aparelho já com root? No aplicativo, o botão “Sensores avançados” tenta ler também as fontes protegidas do fabricante, mediante autorização no seu gerenciador de root. O modo é opcional, somente de leitura e não instala root.</p>
@@ -328,8 +329,8 @@
           <strong>DiskInfoToolkit e RAMSPDToolkit</strong><span>Blacktempel · código aberto (MPL-2.0)</span>
           <small>SMART e SPD da memória, usados pelo plugin via LibreHardwareMonitor</small></a>
         <a class="cartao credito" href="https://pawnio.eu/" target="_blank" rel="noopener">
-          <strong>PawnIO</strong><span>namazso · driver assinado, instalado à parte</span>
-          <small>Libera a temperatura e o clock da CPU para o plugin</small></a>
+          <strong>PawnIO</strong><span>namazso · GPL-2.0+ com exceção · driver assinado incluído no plugin</span>
+          <small>Driver 2.2.0, licença e fontes incluídos no exe; instalação automática após a aceitação</small></a>
         <a class="cartao credito" href="https://www.hwinfo.com/" target="_blank" rel="noopener">
           <strong>HWiNFO</strong><span>Martin Malík · freeware</span>
           <small>Recomendado para sensores detalhados no Windows</small></a>
@@ -347,7 +348,8 @@
     <p><strong>SLT Stress Test</strong> · um projeto <a href="https://smellsliketech.com.br" target="_blank" rel="noopener">Smells Like Tech</a></p>
     <p>Dúvidas e sugestões: <a href="mailto:contato@smellsliketech.com.br">contato@smellsliketech.com.br</a></p>
     <p class="nota">Testes de estresse elevam temperatura e consumo. Use por sua conta e risco e
-      acompanhe as temperaturas. Nenhum dado do teste sai do seu computador.</p>
+      acompanhe as temperaturas. A comparação consulta nossa API; a publicação do teste exige sua escolha.
+      <a href="/privacidade.html">Privacidade e seus dados</a>.</p>
   </footer>
 
   <dialog id="dialogo-aviso" class="dialogo">
@@ -360,7 +362,7 @@
         <li>Abra um monitor de temperatura nativo (ex.: LibreHardwareMonitor ou HWiNFO). Se a CPU
           passar de ~95 °C ou a GPU de ~90 °C, pare o teste.</li>
         <li>Feche trabalhos não salvos. Um sistema instável pode travar durante o teste.</li>
-        <li>O teste de disco grava um arquivo temporário (apagado no fim). Nada é enviado à internet.</li>
+        <li>O teste de disco grava um arquivo temporário (apagado no fim). Ao concluir, dados técnicos são enviados à API para comparação. Publicar no ranking é opcional; veja a <a href="/privacidade.html">política de privacidade</a>.</li>
       </ul>
       <label class="concordo"><input type="checkbox" id="aceite" required> Entendi os riscos e quero continuar</label>
       <div class="dialogo-acoes">
