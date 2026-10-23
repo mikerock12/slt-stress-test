@@ -10,7 +10,7 @@ import { METRICAS, NOMES } from './avaliacao.js';
 import { formatarDuracao, formatarNumero } from './metricas.js';
 import { sparkline } from './graficos.js';
 import { gerarRelatorio } from './relatorio.js';
-import { DOWNLOAD, MonitorSensores, detectarPlugin, lerDiscos, resumoMemoria } from './plugin.js';
+import { DOWNLOAD, MonitorSensores, detectarPlugin, lerDiscos, permissaoRedeLocal, resumoMemoria } from './plugin.js';
 
 const CLASSES = { cpu: TesteCPU, gpu: TesteGPU, memoria: TesteMemoria, disco: TesteDisco, pressao: MonitorPressao };
 const ORDEM = ['cpu', 'gpu', 'memoria', 'disco'];
@@ -70,9 +70,18 @@ function pluginJaUsado() {
   try { return localStorage.getItem('slt-plugin') === '1'; } catch { return false; }
 }
 
+let detectando = false;
+let permissaoPlugin = null;
+
 async function atualizarPlugin() {
+  // Com a permissão de rede local pendente, um pedido pode esperar até 60 s: não empilhar.
+  if (detectando) return;
+  detectando = true;
   const anterior = !!plugin;
-  plugin = await detectarPlugin();
+  permissaoPlugin = await permissaoRedeLocal();
+  if (permissaoPlugin === 'prompt') mostrarPlugin();
+  try { plugin = await detectarPlugin(); } finally { detectando = false; }
+  permissaoPlugin = await permissaoRedeLocal();
   if (plugin) lembrarPlugin();
   mostrarPlugin();
   if (plugin && !anterior && execucao) registrar('log', 'Plugin conectado: os sensores entram a partir do próximo teste.');
@@ -92,7 +101,9 @@ function mostrarPlugin() {
     caixa.innerHTML = `<p><strong>Plugin não conectado.</strong> Sem ele ficam de fora temperatura,
       clocks reais, frequência da memória, SMART e o teste de disco real.</p>
       <div class="acoes"><a class="botao primario" href="${DOWNLOAD}" data-baixar>Baixar plugin</a>
-      <button type="button" class="botao" data-verificar>${procurandoPlugin ? 'Procurando…' : 'Já abri: verificar'}</button></div>`;
+      <button type="button" class="botao" data-verificar>${procurandoPlugin ? 'Procurando…' : 'Já abri: verificar'}</button></div>
+      ${permissaoPlugin === 'prompt' && procurandoPlugin ? '<p class="alerta">O Chrome está perguntando se este site pode acessar a rede local: clique em <strong>Permitir</strong> no aviso perto da barra de endereço.</p>' : ''}
+      ${permissaoPlugin === 'denied' ? '<p class="alerta">O acesso à rede local foi bloqueado para este site. Clique no ícone à esquerda do endereço, libere "Rede local" e recarregue a página.</p>' : ''}`;
     $('#opcao-disco-alvo').hidden = true;
     alvo.value = 'navegador';
     return;

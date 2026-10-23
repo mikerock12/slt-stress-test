@@ -19,10 +19,23 @@ async function pedir(caminho, { metodo = 'GET', corpo, tempo = 4000 } = {}) {
   return dados;
 }
 
+// Permissão do Chrome para um site acessar 127.0.0.1 ("acesso à rede local"):
+// 'granted', 'prompt', 'denied' ou null quando o navegador não tem esse controle.
+export async function permissaoRedeLocal() {
+  for (const name of ['local-network-access', 'loopback-network']) {
+    try { return (await navigator.permissions.query({ name })).state; } catch { /* nome não suportado */ }
+  }
+  return null;
+}
+
 // Devolve a apresentação do plugin ou null se ele não estiver ligado.
+// Com a permissão pendente, o Chrome segura o pedido até a pessoa responder ao aviso:
+// por isso o tempo de espera é longo nesse caso.
 export async function detectarPlugin() {
+  const permissao = await permissaoRedeLocal();
+  if (permissao === 'denied') return null;
   try {
-    const ola = await pedir('/v1/ola', { tempo: 1500 });
+    const ola = await pedir('/v1/ola', { tempo: permissao === 'prompt' ? 60000 : 1500 });
     return ola.protocolo === PROTOCOLO ? ola : null;
   } catch {
     return null;
