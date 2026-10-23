@@ -46,6 +46,11 @@ public final class MainActivity extends Activity {
         web.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest req) {
                 if (autorizado(req.getUrl())) return false;
+                if (req.isForMainFrame() && "mailto".equals(req.getUrl().getScheme()) && "contato@smellsliketech.com.br".equals(req.getUrl().getSchemeSpecificPart())) {
+                    try { startActivity(new Intent(Intent.ACTION_SENDTO, req.getUrl())); }
+                    catch (Exception e) { Toast.makeText(MainActivity.this, "Abra seu e-mail e escreva para contato@smellsliketech.com.br.", Toast.LENGTH_LONG).show(); }
+                    return true;
+                }
                 if (req.isForMainFrame() && "https".equals(req.getUrl().getScheme())) {
                     try { startActivity(new Intent(Intent.ACTION_VIEW, req.getUrl())); } catch (Exception e) { Toast.makeText(MainActivity.this, "Não há navegador disponível.", Toast.LENGTH_SHORT).show(); }
                 }
