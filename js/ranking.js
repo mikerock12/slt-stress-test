@@ -5,7 +5,7 @@ import { formatarNumero } from './metricas.js';
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const marca = (s = '') => /intel/i.test(s) ? 'Intel' : /amd|radeon/i.test(s) ? 'AMD' : /nvidia|geforce/i.test(s) ? 'NVIDIA' : /qualcomm|snapdragon|adreno/i.test(s) ? 'Qualcomm' : /arm|mali/i.test(s) ? 'ARM' : /apple/i.test(s) ? 'Apple' : null;
 const descreverConfig = (c) => [
-  `Método: ${c.motor === 'navegador-v1' ? 'navegador' : c.motor === 'android-nativo-v1' ? 'Android nativo' : 'Windows sem cache'}`,
+  `Método: ${c.motor === 'navegador-v1' ? 'navegador' : c.motor === 'android-nativo-v1' ? 'Android nativo' : c.motor === 'windows-disco-v1' ? 'Windows sem cache' : c.motor}`,
   `Carga: ${c.simultaneos}`, c.duracaoAlvoS ? `Duração: ${c.duracaoAlvoS} s` : 'Duração: indefinida',
   c.threads ? `${c.threads} threads` : null, c.largura ? `${c.largura} × ${c.altura}, intensidade ${c.intensidade}` : null,
   c.mib ? `Solicitado: ${c.mib} MiB` : null, c.alocadoMiB ? `Alocado: ${c.alocadoMiB} MiB` : null,
@@ -33,7 +33,7 @@ export function prepararBenchmark(dados) {
     modelo: pentes.length && pentes.every((m) => m.modelo) ? pentes.map((m) => m.modelo).sort().join(' + ') : a.memoria?.modelo,
     frequencia: pentes.length ? Math.min(...pentes.map((m) => m.configuradaMTs || m.velocidadeMTs || Infinity)) : a.memoria?.frequenciaMTs,
     unidadeFrequencia: 'MT/s', capacidadeGB: pentes.length ? pentes.reduce((n, m) => n + m.capacidadeGB, 0) : a.memoria?.totalGB,
-    tipo: pentes.map((m) => m.tipo).filter(Boolean).sort().join(' + ') || a.memoria?.tipo,
+    tipo: [...new Set(pentes.map((m) => m.tipo).filter(Boolean))].sort().join(' + ') || a.memoria?.tipo,
     contexto: [cpuModelo, ...pentes.map((m) => `${m.capacidadeGB} GB ${m.modelo || '?'} ${m.configuradaMTs || m.velocidadeMTs || '?'}`)].join(' / '), fonte: pentes.length ? 'Plugin Windows / SMBIOS' : 'Android / ActivityManager' };
   const hardware = {
     cpu,
