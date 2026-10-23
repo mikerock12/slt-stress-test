@@ -98,6 +98,10 @@ links. Nenhum código delas foi copiado.
 - Corrigido junto: o site desistia do plugin quando a permissão de rede local aparecia como
   `denied`, mas página local (e navegadores embutidos) acessam 127.0.0.1 assim mesmo. Agora
   sempre tenta e só mostra o aviso de bloqueio se o pedido falhar.
+- Publicado: PR #4 (CI verde), deploy `de85f02c-6c08-424a-aadf-cbdedda0eea1`. Em produção,
+  conferido o caminho "rede local bloqueada" (navegador embutido do app, que nega a
+  permissão): aviso correto. A conferência visual com o plugin no Chrome do dono ficou
+  pendente porque a extensão Claude in Chrome desconectou.
 
 ## Em andamento
 
