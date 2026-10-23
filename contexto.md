@@ -36,6 +36,43 @@ links. Nenhum código delas foi copiado.
 
 ## Estado atual
 
+- 23/10/2026 — **Download direto, PawnIO e privacidade publicados** nos PRs
+  [#7](https://github.com/mikerock12/slt-stress-test/pull/7) e
+  [#8](https://github.com/mikerock12/slt-stress-test/pull/8), ambos com CI verde nos três jobs.
+  Merges `6dae97e490402182f0400ffa193c0b6fa8e1ac7b` e
+  `ad3b5d04383bd4f910f9f45a2a74d599db478de2`. Release
+  [v1.2.1](https://github.com/mikerock12/slt-stress-test/releases/tag/v1.2.1): APK 1.2.1
+  (versionCode 3, mesma assinatura), plugin Windows 1.2.0 do CI, fontes PawnIO e checksums.
+  Worker `08475345-749d-4b3f-9b35-443d9fc6c51f`, migração `0002_privacidade.sql` aplicada.
+  Download Android agora no próprio domínio, sem redirecionamento, nome versionado e hash
+  validado no build; URL 1.2.0 preservada. APK 1.2.1 SHA-256
+  `ef783be779cd98c9b55eaa6ea7bef4299f797fd0a91932eaf81c69bc5a4e6fc8`.
+  Chrome com identificação de POCO concluiu download real de produção e conferiu os bytes.
+  O travamento relatado no POCO físico não foi reproduzido; falta confirmação do dono.
+- PawnIO 2.2.0 x64 oficial incluído no exe: SYS/INF/CAT originais assinados, GPL-2.0 ou
+  posterior com exceção, fontes com PawnPP e módulos 0.1.6, licenças e créditos. Instalação
+  própria via PnP após aceitação, sem baixar outro programa nem desativar proteções. Fontes
+  e licenças acessíveis pela bandeja. Integridade dos recursos aprovada no CI Windows.
+  O dono autorizou aceitar a licença e instalar para teste; UAC local foi cancelado.
+  Não repetir/contornar. Serviço PawnIO já ativo não prova a nova instalação; rotina PnP
+  segue sem validação ponta a ponta. Plugin SHA-256
+  `b4735f7346ad3977f957d70653c8a4a8e29eaff35a8754f126c525d3a7477350`.
+- Privacidade: controlador Smells Like Tech Informática, CNPJ 30.054.253/0001-09 e contato
+  existente. Política online/offline, consentimento opt-in versionado e desmarcado,
+  pseudônimo descrito corretamente, exportação paginada e exclusão/revogação por chave,
+  limpeza diária após 12 meses. Três registros legados sem prova de consentimento saíram
+  da API pública/médias; continuam exportáveis/excluíveis pelo dono. Sem fixtures em produção.
+  Revisão técnica e pendências operacionais/jurídicas em PRIVACIDADE.md; não é certificação
+  integral LGPD. PR #8 corrigiu referência oficial da ANPD também na política do APK.
+- Verificações desta entrega: 44/44 JS/SQLite; build/lint Android e assinatura v2;
+  ELF LOAD/RELRO e ZIP com alinhamento 16 KB nas quatro ABIs. Chrome e Firefox: cada teste
+  e MAX STRESS de 2 min, relatório, JSON e impressão, sem erros JS. Política mobile sem
+  transbordamento; exportação/exclusão reais no D1 local. Em produção: política e rankings
+  200, entradas inválidas 400, download completo com SHA correto, sem inserir testes falsos.
+  APK 1.2.0 instalado e processo aberto no emulador Android 16; System UI teve ANR e recebeu
+  Esperar. Não atribuir isso ao app nem alegar nova validação completa da interface Android.
+  Fontes, Git, releases e dump D1 consolidados no backup de 23/10/2026, com hashes conferidos.
+
 - 23/10/2026 — Apresentação pública do GitHub atualizada: README com plataformas, downloads
   da release, métodos nativos, ranking, limites e comandos atuais; seção Sobre com descrição,
   link do site e tópicos. Conferidos os dados remotos e os links para documentação local.
@@ -49,7 +86,7 @@ links. Nenhum código delas foi copiado.
   memória C++/NDK fora do heap Java e GPU WebGL2. Interface embarcada, PDF/JSON nativos,
   sensores com fonte e modo avançado opcional de somente leitura para root já existente.
 - Ranking: contribuição opcional, séries e médias recalculadas no servidor; comparação por
-  hardware/configuração equivalentes e ao menos cinco outros identificadores anônimos.
+  hardware/configuração equivalentes e ao menos cinco outros identificadores pseudônimos.
   Último teste elegível por identificador/grupo; todos os próprios resultados são excluídos
   da referência. Sem modelo exato/dados suficientes, informa a ausência; emulação e testes
   interrompidos/com erros ficam fora das médias. Sem séries sintéticas em produção.
@@ -148,42 +185,7 @@ links. Nenhum código delas foi copiado.
 
 ## Em andamento
 
-- PR #7 integrado (`6dae97e490402182f0400ffa193c0b6fa8e1ac7b`), CI final verde, migração 0002
-  aplicada antes do deploy; Worker `77ce3061-1048-482c-ae34-779f73340c4b`. Release 1.2.0
-  publicada com exe do CI, APK e fontes. Download real em produção concluiu no Chrome;
-  página de privacidade e quatro rankings 200, corpos inválidos 400, sem fixtures.
-  Revisão de referências encontrou URL da ANPD inválida. Codex finaliza a manutenção na
-  branch `codex/corrige-link-anpd`, APK 1.2.1 (versionCode 3), documento e links atualizados;
-  mantém a release 1.2.0 e seu download disponíveis. Plugin Windows permanece 1.2.0.
-- Codex, branch `codex/corrige-download-apk`: investigar download que chega a 100% sem
-  concluir no POCO X7 PRO; conferir transferência/assinatura e corrigir distribuição se
-  necessário. Dono de js/android.js, index.html, build, cabeçalhos e documentação nesta tarefa.
-  Imagens confirmam Chrome/aba de download GitHub com 1,86/1,86 MB; causa no aparelho ainda
-  não reproduzida. APK remoto idêntico ao local e assinatura v2 válida. Preparado espelho
-  estático no domínio oficial, sem redirecionamento; build valida SHA-256. Suíte revelou
-  expectativa aleatória de data/UUID em tests/api.test.mjs; fixture agora tem data explícita.
-  Próximas tarefas autorizadas: incluir PawnIO no exe (substitui a regra anterior de não
-  distribuir), verificar licença/fonte e instalação automática; revisar LGPD, política e controles.
-  Implementados: driver x64 2.2.0 oficial SYS/INF/CAT (assinatura Microsoft válida), fontes
-  completos com PawnPP, GPL/aviso e instalação PnP após aceitação, sem incluir o instalador
-  de licença não declarada. Exe compilado; --verificar-pacote retornou 0, sem instalar.
-  Política com controlador informado pelo dono, consentimento versionado, exportação/exclusão
-  por chave, revogação e retenção diária de 12 meses; migração 0002. Suíte 44/44.
-  Chrome/Firefox: CPU, GPU, memória, disco e MAX STRESS 2 min concluídos com relatórios,
-  JSON e impressão, sem erros JS. Download direto local concluiu no Chrome com UA POCO,
-  SHA-256 idêntico à release; ainda sem confirmação no aparelho físico do dono.
-  D1 de produção tem 3 testes legados; não inventar consentimento para eles: passam a ficar
-  fora da consulta pública até nova autorização, mantendo exportação/exclusão pelo dono.
-  APK release 1.2.0 instalado e processo aberto no emulador 16; houve ANR da System UI do
-  emulador, dispensado com Esperar. A carga completa Android já tinha sido conferida no PR #6.
-  Dono autorizou expressamente a aceitação da GPL/exceção e instalação do driver neste PC
-  para validar em 23/10/2026. UAC foi cancelado (também na nova verificação local do pacote);
-  não repetir/contornar a recusa. Serviço PawnIO já estava ativo, conforme sc.exe query;
-  não atribuir essa instalação ao teste novo. Rotina PnP ainda não validada ponta a ponta.
-  PR #7 aberto; CI do primeiro commit passou nos três jobs, incluindo integridade do pacote.
-  Última conferência incluiu index.html e contexto.md que ainda estavam fora do commit;
-  enviar o complemento e aguardar CI do novo commit antes de integrar.
-  APK exclui downloads dos assets embarcados.
+(vazio)
 
 ## Conferência em aparelho físico pendente
 
@@ -194,6 +196,12 @@ links. Nenhum código delas foi copiado.
 - Teste WebGPU compute como alternativa ao WebGL2.
 
 ## Histórico
+
+- 23/10/2026 — PRs #7 e #8 integrados e publicados com CI verde; APK 1.2.1 em download
+  direto, plugin 1.2.0 com PawnIO, licenças/fontes e controles de privacidade. Verificações
+  e limites registrados no Estado atual. Backup final de fontes, Git, releases e D1
+  na pasta de 23/10/2026 do Drive, com hashes conferidos.
+
 
 - 23/10/2026 — README e seção Sobre do GitHub atualizados para refletir a entrega Android e
   ranking, com descrição em português, downloads e tópicos; alteração somente documental.

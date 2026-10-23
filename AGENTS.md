@@ -49,6 +49,8 @@ Worker com D1 para benchmarks; APK Android com interface embarcada e cargas Java
 | `js/benchmark.js` / `js/ranking.js` | Contrato validado no servidor, grupos comparáveis e UI |
 | `js/dispositivo.js` / `js/android.js` | Detecção celular/desktop e bridge com APK |
 | `android/` | APK com CPU/memória/disco nativos e WebGL2; ver `android/README.md` |
+| `privacidade.html` / `PRIVACIDADE.md` | Política pública e procedimentos de privacidade |
+| `worker/privacidade.js` / `js/privacidade.js` | Consentimento, exportação, exclusão e retenção |
 
 ### Contrato dos testes
 
@@ -89,7 +91,10 @@ dotnet publish plugin/SLTStressTest.Plugin -c Release -o plugin/publicado
   site aponta para `releases/latest/download/`.
 - Sem o driver PawnIO não há temperatura/clock por núcleo da CPU: o clock vem do contador de
   desempenho do Windows. O dono autorizou em 23/10/2026 incluir o PawnIO no exe, com instalação
-  e configuração automáticas, licença, fontes exigidas e créditos; integração em andamento.
+  e configuração automáticas, licença, fontes exigidas e créditos; entregue no plugin 1.2.0.
+  O pacote usa SYS/INF/CAT oficiais assinados e instalação PnP própria após aceitação.
+  Nunca desativar proteções do Windows. A validação local da instalação ficou incompleta:
+  o UAC foi cancelado; não repetir nem contornar essa recusa sem nova instrução específica.
 - O plugin pede administrador (manifesto). O terminal de desenvolvimento do dono já roda
   elevado.
 
@@ -118,12 +123,17 @@ MAX STRESS de 2 min, conferir o relatório, a impressão em PDF e o JSON exporta
 
 ## Última entrega (23/10/2026)
 
-Em andamento: Codex investiga o download APK em 100% no POCO X7 PRO, branch
-`codex/corrige-download-apk`; detalhes e arquivos sob responsabilidade em contexto.md.
-PR #7 integrado e v1.2.0 publicada. Manutenção em `codex/corrige-link-anpd` corrige o link
-oficial da ANPD no documento online e no APK 1.2.1, mantendo o plugin 1.2.0 sem alterações.
-Inclui também PawnIO no exe e política/controles LGPD, autorizados pelo dono. Em 23/10/2026,
-o dono autorizou expressamente aceitar a GPL/exceção e instalar o driver neste PC para validar.
+PRs #7 e #8 integrados, CI verde de site/API, Android e plugin. Release v1.2.1 publicada:
+APK Android 1.2.1 e plugin Windows 1.2.0 (mesmo binário aprovado no CI do PR #7).
+Download do APK pelo próprio domínio, sem redirecionamento, com hash validado no build;
+Chrome concluiu o download em produção. Falta confirmação no POCO X7 PRO físico.
+PawnIO 2.2.0 incluído no exe com GPL/exceção, fontes, licenças e créditos. A aceitação e
+instalação de teste foram autorizadas, mas o UAC local foi cancelado; rotina PnP não
+validada ponta a ponta. O serviço já ativo não é evidência de instalação pelo novo exe.
+Política de privacidade e controles técnicos publicados: consentimento versionado,
+exportação/exclusão por chave e retenção de 12 meses. Procedimentos e limites jurídicos/
+operacionais em PRIVACIDADE.md; não declarar certificação integral de conformidade LGPD.
+Worker de produção: `08475345-749d-4b3f-9b35-443d9fc6c51f`, migração 0002 aplicada.
 
 PR #6 integrado na main, CI verde de site/API, Android e plugin. Release v1.1.0 e produção publicadas.
 README e seção Sobre do GitHub atualizados com APK Android, plugin Windows e ranking;
