@@ -42,6 +42,7 @@ export function analisar(dados) {
       falhaFatal: c.falhaFatal || c.info?.falhaFatal,
       distribuicao: c.info?.distribuicao,
       quedaCpu,
+      disparoTemp: dados.protecao?.disparo?.componente === id ? dados.protecao.disparo : null,
       saudeDisco: fisico?.avaliacao?.estado,
       avisos,
     });
@@ -53,7 +54,24 @@ export function analisar(dados) {
     geral.status = 'atencao';
     geral.titulo = 'Aprovado com ressalvas';
   }
+  // Parada por temperatura: nunca "aprovado", mesmo se o componente quente não estava em teste.
+  if (dados.protecao?.disparo && geral.status !== 'falha') {
+    geral.status = 'atencao';
+    geral.titulo = 'Interrompido pela proteção de temperatura';
+  }
   return { geral, componentes };
+}
+
+function textoProtecao(p) {
+  if (!p) return '';
+  const max = (k) => (p.maxima?.[k] === null || p.maxima?.[k] === undefined ? 'sem leitura' : `${Math.round(p.maxima[k])} °C`);
+  const limites = p.limites.ativa
+    ? `limites CPU ${p.limites.cpu} °C e GPU ${p.limites.gpu} °C`
+    : 'desligada (só registrou as temperaturas)';
+  const disparo = p.disparo
+    ? `<strong class="ruim-texto">Disparou: ${esc(NOMES[p.disparo.componente])} a ${Math.round(p.disparo.temp)} °C, e todos os testes foram parados.</strong>`
+    : (p.limites.ativa ? 'Não disparou.' : '');
+  return `<p><strong>Proteção de temperatura:</strong> ${esc(limites)}. Máximas: CPU ${esc(max('cpu'))}, GPU ${esc(max('gpu'))}. ${disparo}</p>`;
 }
 
 function linhaMetricas(id, resumo) {
@@ -169,6 +187,7 @@ export function gerarRelatorio(container, dados) {
         <p>Temperatura, clocks e potência acima vieram dos sensores do hardware, lidos pelo SLT Stress Test Plugin.
           ${dados.plugin.memoria ? `Memória instalada: <strong>${esc(dados.plugin.memoria)}</strong>.` : ''}</p>
         ${dados.plugin.pawnio ? '' : '<p class="nota">O driver PawnIO não estava instalado, então a temperatura e o clock por núcleo da CPU ficaram de fora (o clock veio do contador do Windows). Instale-o em <a href="https://pawnio.eu/" target="_blank" rel="noopener">pawnio.eu</a> e reabra o plugin.</p>'}
+        ${textoProtecao(dados.protecao)}
         <p class="nota">Valores que o seu hardware não informa simplesmente não aparecem: nada foi estimado no lugar.</p>
       </article>`
     : null;

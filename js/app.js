@@ -11,6 +11,7 @@ import { formatarDuracao, formatarNumero } from './metricas.js';
 import { sparkline } from './graficos.js';
 import { gerarRelatorio } from './relatorio.js';
 import { DOWNLOAD, MonitorSensores, detectarPlugin, lerDiscos, permissaoRedeLocal, resumoMemoria } from './plugin.js';
+import { LIMITES_PADRAO, ProtecaoTemperatura, nivel, normalizarLimites } from './protecao.js';
 
 const CLASSES = { cpu: TesteCPU, gpu: TesteGPU, memoria: TesteMemoria, disco: TesteDisco, pressao: MonitorPressao };
 const ORDEM = ['cpu', 'gpu', 'memoria', 'disco'];
@@ -93,9 +94,60 @@ function procurarPlugin() {
   if (!procurandoPlugin) procurandoPlugin = setInterval(() => { if (!execucao) atualizarPlugin(); }, 4000);
 }
 
+// ---------- Proteção de temperatura ----------
+
+function lerLimites() {
+  let salvos = {};
+  try { salvos = JSON.parse(localStorage.getItem('slt-protecao') || '{}'); } catch { /* sem storage */ }
+  return normalizarLimites({ ...LIMITES_PADRAO, ...salvos });
+}
+
+function limitesDaTela() {
+  const limites = normalizarLimites({
+    ativa: $('#protecao-ativa').checked,
+    cpu: $('#limite-cpu').value,
+    gpu: $('#limite-gpu').value,
+  });
+  try { localStorage.setItem('slt-protecao', JSON.stringify(limites)); } catch { /* sem storage */ }
+  return limites;
+}
+
+function prepararProtecao() {
+  const l = lerLimites();
+  $('#protecao-ativa').checked = l.ativa;
+  $('#limite-cpu').value = l.cpu;
+  $('#limite-gpu').value = l.gpu;
+  for (const el of ['#protecao-ativa', '#limite-cpu', '#limite-gpu']) {
+    $(el).addEventListener('change', () => {
+      const n = limitesDaTela();
+      $('#limite-cpu').value = n.cpu;
+      $('#limite-gpu').value = n.gpu;
+    });
+  }
+}
+
+function mostrarTemperaturas(temps, limites) {
+  const caixa = $('#temperaturas');
+  caixa.hidden = false;
+  caixa.innerHTML = ['cpu', 'gpu'].map((k) => {
+    const t = temps[k];
+    const n = nivel(t, limites[k]);
+    const valor = n === 'sem' ? 'sem leitura' : `${Math.round(t)} °C`;
+    const limite = limites.ativa ? `limite ${limites[k]} °C` : 'proteção desligada';
+    return `<div class="temp ${n}"><span>${k.toUpperCase()}</span><strong>${valor}</strong><small>${limite}</small></div>`;
+  }).join('');
+}
+
 function mostrarPlugin() {
   const caixa = $('#plugin-estado');
   const alvo = $('#disco-alvo');
+  $('#protecao').hidden = !plugin;
+  if (plugin) {
+    $('#protecao-nota').innerHTML = `A temperatura real aparece durante o teste. Se ficar acima do limite por 3 segundos
+      seguidos, todos os testes param na hora e o relatório mostra o motivo.${plugin.pawnio ? '' : `
+      <br><span class="alerta">Sem o driver <a href="https://pawnio.eu/" target="_blank" rel="noopener">PawnIO</a> o plugin não lê a
+      temperatura da CPU, então a proteção vale só para a GPU (quando ela informa a temperatura).</span>`}`;
+  }
   if (!plugin) {
     caixa.className = 'plugin-estado';
     caixa.innerHTML = `<p><strong>Plugin não conectado.</strong> Sem ele ficam de fora temperatura,
@@ -103,7 +155,7 @@ function mostrarPlugin() {
       <div class="acoes"><a class="botao primario" href="${DOWNLOAD}" data-baixar>Baixar plugin</a>
       <button type="button" class="botao" data-verificar>${procurandoPlugin ? 'Procurando…' : 'Já abri: verificar'}</button></div>
       ${permissaoPlugin === 'prompt' && procurandoPlugin ? '<p class="alerta">O Chrome está perguntando se este site pode acessar a rede local: clique em <strong>Permitir</strong> no aviso perto da barra de endereço.</p>' : ''}
-      ${permissaoPlugin === 'denied' ? '<p class="alerta">O acesso à rede local foi bloqueado para este site. Clique no ícone à esquerda do endereço, libere "Rede local" e recarregue a página.</p>' : ''}`;
+      ${permissaoPlugin === 'denied' && procurandoPlugin ? '<p class="alerta">O acesso à rede local foi bloqueado para este site. Clique no ícone à esquerda do endereço, libere "Rede local" e recarregue a página.</p>' : ''}`;
     $('#opcao-disco-alvo').hidden = true;
     alvo.value = 'navegador';
     return;
@@ -279,6 +331,14 @@ async function executar(ids, duracaoS, modo) {
     });
     execucao.monitor.iniciar();
     registrar('log', `Plugin conectado: sensores reais ativos${plugin.pawnio ? '' : ' (sem PawnIO, a temperatura da CPU fica de fora)'}.`);
+    const limites = limitesDaTela();
+    execucao.protecao = new ProtecaoTemperatura(limites);
+    registrar('log', limites.ativa
+      ? `Proteção de temperatura ligada: para tudo se a CPU passar de ${limites.cpu} °C ou a GPU de ${limites.gpu} °C.`
+      : 'Proteção de temperatura desligada: as temperaturas só são registradas.');
+    mostrarTemperaturas({}, limites);
+  } else {
+    $('#temperaturas').hidden = true;
   }
   montarPaineis(ids);
 
@@ -322,6 +382,22 @@ function tique() {
     if (fatal && !comp.falhaFatal) comp.falhaFatal = fatal;
   }
   atualizarPaineis();
+
+  // A proteção olha CPU e GPU mesmo quando só outro componente está sendo testado.
+  if (ex.protecao && ex.monitor?.ultima) {
+    const temps = { cpu: ex.monitor.para('cpu').tempC ?? null, gpu: ex.monitor.para('gpu').tempC ?? null };
+    const { avisos, disparo } = ex.protecao.verificar(temps);
+    mostrarTemperaturas(temps, ex.protecao.limites);
+    for (const a of avisos) {
+      registrar('log', `${NOMES[a.componente]} a ${Math.round(a.temp)} °C, perto do limite de ${a.limite} °C.`);
+    }
+    if (disparo) {
+      const msg = `${NOMES[disparo.componente]} chegou a ${Math.round(disparo.temp)} °C (limite ${disparo.limite} °C)`;
+      registrar('erro', `Proteção de temperatura: ${msg}. Parando todos os testes.`);
+      finalizar(`Parado pela proteção de temperatura: ${msg}`);
+      return;
+    }
+  }
 
   $('#tempo-decorrido').textContent = formatarDuracao(decorrido);
   if (ex.duracaoS) {
@@ -376,6 +452,7 @@ async function finalizar(motivo) {
     eventos: ex.eventos,
     plugin: ex.monitor ? { versao: plugin?.versao, pawnio: plugin?.pawnio, administrador: plugin?.administrador, cpu: plugin?.cpu, memoria: resumoMemoria(plugin?.memoria) } : null,
     saudeDiscos,
+    protecao: ex.protecao ? { limites: ex.protecao.limites, maxima: ex.protecao.maxima, disparo: ex.protecao.disparo } : null,
   });
   relatorio.hidden = false;
   relatorio.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -404,6 +481,7 @@ document.addEventListener('slt:novo-teste', () => {
   $('#configurar').scrollIntoView({ behavior: 'smooth' });
 });
 
+prepararProtecao();
 mostrarSistema().then(() => {
   mostrarPlugin();
   const local = ['localhost', '127.0.0.1'].includes(location.hostname);

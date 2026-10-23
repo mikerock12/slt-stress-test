@@ -191,6 +191,11 @@ export function avaliar(componente, resumo, extra = {}) {
     }
   }
 
+  if (extra.disparoTemp) {
+    piora('atencao');
+    motivos.unshift(`O teste foi interrompido pela proteção de temperatura: ${NOMES[componente]} chegou a ${Math.round(extra.disparoTemp.temp)} °C, acima do limite de ${extra.disparoTemp.limite} °C. Melhore a refrigeração (cooler, pasta térmica, poeira, fluxo de ar) antes de repetir; os números deste teste valem só até a parada.`);
+  }
+
   if (extra.saudeDisco === 'ruim') { piora('falha'); motivos.push('O SMART do disco testado indica falha. Faça backup imediatamente.'); }
   else if (extra.saudeDisco === 'cuidado') { piora('atencao'); motivos.push('O SMART do disco testado pede cuidado (veja a saúde dos discos abaixo).'); }
   if (extra.avisos) motivos.push(...extra.avisos);
