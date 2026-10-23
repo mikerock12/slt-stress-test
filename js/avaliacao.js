@@ -156,16 +156,20 @@ export function avaliar(componente, resumo, extra = {}) {
     }
   }
 
-  // Temperatura real (só com o plugin).
+  // Temperatura real (só com o plugin). Se a proteção parou o teste, o motivo dela já diz
+  // tudo; e o limite definido pela pessoa vale quando é mais baixo que o padrão.
   const temp = resumo.tempC;
-  if (temp && temp.n) {
+  if (temp && temp.n && !extra.disparoTemp) {
     const limites = { cpu: [90, 'a CPU está no limite térmico e reduz o clock para se proteger'],
       gpu: [88, 'a GPU está quente a ponto de reduzir o clock'],
       memoria: [80, 'os pentes estão quentes demais'],
       disco: [65, 'o disco está quente; SSDs reduzem a velocidade e HDDs se desgastam mais rápido'] }[componente];
-    if (limites && temp.max >= limites[0]) {
+    const doUsuario = Number.isFinite(extra.limiteTemp) && limites && extra.limiteTemp < limites[0];
+    const limite = limites && (doUsuario ? extra.limiteTemp : limites[0]);
+    if (limites && temp.max >= limite) {
       piora('atencao');
-      motivos.push(`Temperatura chegou a ${temp.max.toFixed(0)} °C (média ${temp.media.toFixed(0)} °C): ${limites[1]}. Verifique cooler, pasta térmica, poeira e fluxo de ar.`);
+      const porque = doUsuario ? `acima do limite de ${extra.limiteTemp} °C que você definiu` : limites[1];
+      motivos.push(`Temperatura chegou a ${temp.max.toFixed(0)} °C (média ${temp.media.toFixed(0)} °C): ${porque}. Verifique cooler, pasta térmica, poeira e fluxo de ar.`);
     } else if (limites) {
       motivos.push(`Temperatura sob controle: média ${temp.media.toFixed(0)} °C, máxima ${temp.max.toFixed(0)} °C.`);
     }

@@ -250,6 +250,7 @@ code { background: var(--panel-2); border: 1px solid var(--line); border-radius:
 }
 .protecao .nota { margin: 10px 0 0; }
 .ruim-texto { color: var(--bad); }
+.alerta { color: var(--warn); }
 .temperaturas { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
 .temp {
   display: flex; align-items: baseline; gap: 6px; padding: 8px 12px; border-radius: 10px;
