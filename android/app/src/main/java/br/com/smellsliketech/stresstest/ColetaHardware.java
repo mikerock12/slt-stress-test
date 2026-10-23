@@ -11,6 +11,7 @@ import java.util.*;
 final class ColetaHardware {
     private final Context ctx;
     ColetaHardware(Context ctx) { this.ctx = ctx; }
+    static boolean emulado() { return "ranchu".equals(Build.HARDWARE) || "goldfish".equals(Build.HARDWARE); }
     static JSONObject obj(Object... pares) {
         JSONObject j = new JSONObject();
         for (int i = 0; i < pares.length; i += 2) try { j.put(String.valueOf(pares[i]), pares[i+1] == null ? JSONObject.NULL : pares[i+1]); } catch (JSONException ignored) { }
@@ -33,7 +34,7 @@ final class ColetaHardware {
         JSONArray nucleos = new JSONArray(); double max = 0;
         for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
             String p = "/sys/devices/system/cpu/cpu" + i + "/cpufreq/";
-            Double f = num(p + "cpuinfo_max_freq", 1000); if (f != null) max = Math.max(max, f);
+            Double f = emulado() ? null : num(p + "cpuinfo_max_freq", 1000); if (f != null) max = Math.max(max, f);
             nucleos.put(obj("nucleo", i, "maxMHz", f, "fonte", p + "cpuinfo_max_freq"));
         }
         String soc = Build.VERSION.SDK_INT >= 31 ? Build.SOC_MODEL : cpuInfo();
@@ -42,7 +43,7 @@ final class ColetaHardware {
         JSONObject disco = obj("tipo", "Flash", "modelo", null, "marca", null, "capacidadeGB", new StatFs(ctx.getFilesDir().getPath()).getTotalBytes()/1e9,
             "observacao", "Capacidade do sistema de arquivos de dados; modelo físico não exposto de forma confiável. Não inferimos UFS/eMMC pelo desempenho.");
         return obj("protocolo", 1, "versao", "1.0.0", "marca", Build.MANUFACTURER, "modelo", Build.MODEL, "produto", Build.PRODUCT,
-            "android", Build.VERSION.RELEASE, "api", Build.VERSION.SDK_INT, "abis", new JSONArray(Arrays.asList(Build.SUPPORTED_ABIS)),
+            "android", Build.VERSION.RELEASE, "api", Build.VERSION.SDK_INT, "emulado", emulado(), "abis", new JSONArray(Arrays.asList(Build.SUPPORTED_ABIS)),
             "cpu", obj("marca", fabricante, "modelo", soc, "frequenciaMHz", max > 0 ? max : null, "nucleos", nucleos, "fonte", "Build.SOC_MODEL / proc cpuinfo / cpufreq"),
             "gpu", obj("frequenciaMaxMHz", num(gpuFonte, 1e6), "fonte", gpuFonte, "modelo", "Renderer WebGL2 informado no relatório"),
             "memoria", obj("totalGB", mem.totalMem / 1073741824d, "limiteHeapMiB", Runtime.getRuntime().maxMemory()/1048576,
@@ -75,7 +76,7 @@ final class ColetaHardware {
         } catch (Exception ignored) { }
         JSONArray clocks = new JSONArray(); double soma = 0; int lidos = 0;
         for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
-            String p = "/sys/devices/system/cpu/cpu" + i + "/cpufreq/scaling_cur_freq"; Double f = num(p, 1000);
+            String p = "/sys/devices/system/cpu/cpu" + i + "/cpufreq/scaling_cur_freq"; Double f = emulado() ? null : num(p, 1000);
             clocks.put(obj("nucleo", i, "MHz", f, "fonte", p)); if (f != null) { soma += f; lidos++; }
         }
         JSONArray devfreq = new JSONArray();
@@ -89,7 +90,8 @@ final class ColetaHardware {
         int status = Build.VERSION.SDK_INT >= 29 ? pm.getCurrentThermalStatus() : -1;
         return obj("cpuTempC", cpu, "gpuTempC", gpu, "cpuClockMHz", lidos > 0 ? soma/lidos : null,
             "gpuClockMHz", num("/sys/class/kgsl/kgsl-3d0/gpuclk", 1e6), "clocksPorNucleo", clocks, "zonasTermicas", zonas, "devfreq", devfreq,
-            "apiTemperatura", apiTemp, "ausencias", obj("cpuTempC", cpu == null ? "Não disponível: fabricante não permite ler sensor identificado como CPU." : null,
+            "apiTemperatura", apiTemp, "ausencias", obj("cpuClockMHz", emulado() ? "Não disponível: emulador não expõe o clock real da CPU física." : null,
+                "cpuTempC", cpu == null ? "Não disponível: fabricante não permite ler sensor identificado como CPU." : null,
                 "gpuTempC", gpu == null ? "Não disponível: fabricante não permite ler sensor identificado como GPU." : null),
             "bateria", obj("tempC", tempB, "nivel", b == null ? null : b.getIntExtra(BatteryManager.EXTRA_LEVEL, -1),
                 "tensaoMV", b == null ? null : b.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1),

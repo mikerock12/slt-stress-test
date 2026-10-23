@@ -57,7 +57,7 @@ export function prepararBenchmark(dados) {
   }
   return { versao: VERSAO_BENCHMARK, id: crypto.randomUUID(), contribuinte: contribuinte(), ids: dados.ids,
     duracaoS: dados.duracaoS, concluido: dados.motivo === 'Tempo concluído' && !dados.protecao?.disparo && !dados.oculta && !dados.eventos?.some((e) => e.tipo === 'erro'),
-    sistema: { tipo: s.dispositivo?.tipo, so: s.so, navegador: s.navegador, threads: s.threads,
+    sistema: { tipo: s.dispositivo?.tipo, emulado: dados.android?.emulado === true, so: s.so, navegador: s.navegador, threads: s.threads,
       energia: s.bateria ? s.bateria.carregando ? 'tomada' : 'bateria' : 'não disponível', aparelho: a.modelo ? `${a.marca} ${a.modelo}` : null }, componentes };
 }
 async function pedir(url, corpo) {

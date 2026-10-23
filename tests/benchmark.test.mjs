@@ -33,6 +33,9 @@ test('validação recusa NaN, negativos, amostras excessivas e componentes arbit
 test('modelo genérico e GPU de software não viram grupos de hardware físico', () => {
   for(const modelo of ['unknown','To be filled by OEM','qcom','ANGLE (Google, SwiftShader)']){const e=exemplo();e.componentes.cpu.hardware.modelo=modelo;assert.equal(validarBenchmark(e).componentes.cpu.elegivel,false);}
 });
+test('ambiente emulado não contribui para médias de hardware físico',()=>{
+  const e=exemplo();e.sistema.emulado=true;assert.equal(validarBenchmark(e).componentes.cpu.elegivel,false);
+});
 test('grupo separa frequência, resolução/motor, simultâneos, energia e navegador', () => {
   const d = validarBenchmark(exemplo()); const chave = chaveGrupo(d, 'cpu');
   for (const alterar of [(e) => e.componentes.cpu.hardware.frequencia = null, (e) => e.componentes.cpu.configuracao.motor = 'android-nativo-v1', (e) => e.componentes.cpu.configuracao.simultaneos = 'cpu+gpu', (e) => e.sistema.energia = 'bateria', (e) => e.sistema.navegador = 'Firefox 140']) {

@@ -147,7 +147,7 @@ final class Cargas {
             try(RandomAccessFile raf=new RandomAccessFile(arquivo,"rw");FileChannel ch=raf.getChannel()) {
                 long tamanho=mib*1024L*1024;ByteBuffer seq=ByteBuffer.allocateDirect(1024*1024).order(ByteOrder.LITTLE_ENDIAN),rnd=ByteBuffer.allocateDirect(4096).order(ByteOrder.LITTLE_ENDIAN);
                 for(long p=0;p<tamanho && e.ativo();p+=seq.capacity()){preencher(seq,p);while(seq.hasRemaining()&&e.ativo())ch.write(seq);}
-                ch.force(true);long erros=0;Random r=new Random(12345);int fase=0;
+                ch.force(true);long erros=0;Random r=new Random(12345);int fase=0,ciclos=0;
                 String[] nomes={"seqLeitura","seqEscrita","rndLeitura","rndEscrita"};
                 while(e.ativo()) {
                     ByteBuffer b=fase<2?seq:rnd;boolean escrita=fase%2==1;long feitos=0,pos=0,inicio=System.nanoTime();
@@ -160,6 +160,7 @@ final class Cargas {
                     }
                     double mbs=feitos/((System.nanoTime()-inicio)/1e9)/1e6;e.metricas.put(nomes[fase],mbs);
                     if(fase==2)e.metricas.put("iops",mbs*1e6/4096);e.metricas.put("erros",(double)erros);fase=(fase+1)%4;
+                    if(fase==0)e.info.put("ciclos",++ciclos);
                 }
             }catch(Throwable ex){e.falha="Falha no arquivo de teste: "+ex.getClass().getSimpleName();e.parar=true;}
             finally { e.info.put("arquivoRemovido",!arquivo.exists()||arquivo.delete()); }

@@ -17,7 +17,7 @@ export function validarBenchmark(entrada) {
   if (!numero(entrada.duracaoS) || entrada.duracaoS > 86400) throw new Error('Duração inválida.');
   const ids = Object.keys(PRINCIPAL_RANKING).filter((id) => entrada.ids.includes(id));
   const s = entrada.sistema || {};
-  const sistema = { tipo: s.tipo === 'celular' ? 'celular' : 'desktop', so: texto(s.so), navegador: texto(s.navegador),
+  const sistema = { tipo: s.tipo === 'celular' ? 'celular' : 'desktop', emulado: s.emulado === true, so: texto(s.so), navegador: texto(s.navegador),
     energia: ['tomada', 'bateria'].includes(s.energia) ? s.energia : 'não disponível', aparelho: texto(s.aparelho), threads: numero(s.threads) };
   const componentes = {};
   for (const id of ids) {
@@ -48,7 +48,7 @@ export function validarBenchmark(entrada) {
     const principal = resumo[PRINCIPAL_RANKING[id]];
     const erros = (resumo.erros?.total || 0) + (resumo.artefatos?.total || 0);
     const modeloInvalido = /^(desconhecid|unknown|não disponível|generic|disco$|sem webgl|n\/a$|default|to be filled|not specified|qcom$)|swiftshader|llvmpipe|software renderer|webkit webgl/i.test(hardware.modelo || '');
-    const elegivel = entrada.concluido === true && entrada.duracaoS >= 115 && principal?.n >= 10 && principal.media > 0 && erros === 0 && !c.falha && !!hardware.modelo && !modeloInvalido;
+    const elegivel = !sistema.emulado && entrada.concluido === true && entrada.duracaoS >= 115 && principal?.n >= 10 && principal.media > 0 && erros === 0 && !c.falha && !!hardware.modelo && !modeloInvalido;
     const detalhes = {};
     for (const k of ['threads', 'alocadoMiB', 'arquivoMiB', 'ciclos', 'solicitadoMiB']) if (Number.isFinite(c.detalhes?.[k])) detalhes[k] = c.detalhes[k];
     if (objeto(c.detalhes?.resultados)) {

@@ -101,7 +101,8 @@ function detalheInfo(id, info = {}, opcoes = {}) {
   if (id === 'gpu') itens.push(info.renderer, info.resolucao, `${info.passos} passos de raymarching`);
   if (id === 'memoria') itens.push(`${info.alocadoMiB ?? opcoes.mib} MiB testados`);
   if (id === 'disco' && info.modo === 'nativo') itens.push(`disco real ${info.unidade} sem cache (plugin)`);
-  if (id === 'disco' && info.modo !== 'nativo') itens.push('armazenamento do navegador (OPFS)');
+  if (id === 'disco' && info.modo === 'android') itens.push('armazenamento nativo Android · SEQ1M/RND4K Q1 · leitura pode incluir cache');
+  else if (id === 'disco' && info.modo !== 'nativo') itens.push('armazenamento do navegador (OPFS)');
   if (id === 'disco') itens.push(`arquivo de ${info.arquivoMiB ?? opcoes.mib} MiB`, `${info.ciclos ?? 0} ciclo(s) completos`);
   return itens.filter(Boolean).map(esc).join(' · ');
 }

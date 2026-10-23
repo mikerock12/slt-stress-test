@@ -51,7 +51,7 @@ export async function api(req, env) {
     for (const id of dados.ids) {
       const c = dados.componentes[id];
       const ref = await env.DB.prepare(`SELECT COUNT(*) n, AVG(r.pontuacao) media, ${colunasMedias(id)} FROM resultados r WHERE r.grupo = ? AND r.contribuinte <> ? AND ${recentes}`).bind(grupos[id], contribuinte).first();
-      comparacoes[id] = c.elegivel ? comparar(c.pontuacao, ref?.media, ref?.n || 0) : { estado: 'inelegivel', mensagem: 'Sem comparação: teste interrompido, curto, com erros, sem medições suficientes ou sem identificação exata do hardware.' };
+      comparacoes[id] = c.elegivel ? comparar(c.pontuacao, ref?.media, ref?.n || 0) : { estado: 'inelegivel', mensagem: 'Sem comparação: ambiente emulado, teste interrompido, curto, com erros, sem medições suficientes ou sem identificação exata do hardware.' };
       if (c.elegivel) comparacoes[id].metricas = Object.fromEntries(Object.entries(mediasPublicas(id, ref || {})).map(([k, r]) => [k, { ...r, valor: c.resumo[k]?.media, suficiente: r.n >= MIN_CONTRIBUINTES }]));
     }
     if (url.pathname === '/api/comparar') {
