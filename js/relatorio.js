@@ -32,6 +32,8 @@ function estabilidade(cv) {
 // Calcula tudo o que o relatório mostra; separado do HTML para virar o JSON exportado.
 export function analisar(dados) {
   const componentes = {};
+  // A pressão só pesa no veredito quando a CPU também perdeu desempenho.
+  const quedaCpu = dados.componentes.cpu ? resumirComponente('cpu', dados.componentes.cpu.series).gflops.queda : null;
   for (const [id, c] of Object.entries(dados.componentes)) {
     const resumo = resumirComponente(id, c.series);
     const avisos = [...(c.info?.avisos || [])];
@@ -39,6 +41,7 @@ export function analisar(dados) {
     const avaliacao = avaliar(id, resumo, {
       falhaFatal: c.falhaFatal || c.info?.falhaFatal,
       distribuicao: c.info?.distribuicao,
+      quedaCpu,
       saudeDisco: fisico?.avaliacao?.estado,
       avisos,
     });
