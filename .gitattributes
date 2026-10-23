@@ -1,0 +1,3 @@
+# Os arquivos do driver assinado e seus hashes exigem bytes idênticos em Windows/Linux.
+plugin/SLTStressTest.Plugin/Terceiros/PawnIO/** -text
+assets/downloads/*.apk binary

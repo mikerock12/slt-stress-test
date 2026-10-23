@@ -6,15 +6,22 @@ namespace SLTStressTest.Plugin;
 /// <summary>
 /// O plugin do SLT Stress Test: liga o site aos sensores reais desta máquina (temperatura,
 /// clocks, potência, frequência da memória, SMART) e roda o benchmark de disco sem cache.
-/// Não abre janela: fica um ícone perto do relógio.
+/// Apresenta a licença do driver quando necessário e fica na bandeja do sistema.
 /// </summary>
 internal static class Program
 {
     private const string Site = "https://stresstest.smellsliketech.com.br";
 
     [STAThread]
-    private static int Main()
+    private static int Main(string[] args)
     {
+        // Verificação somente leitura para CI: não instala driver nem abre interface.
+        if (args.Contains("--verificar-pacote")) { try { PawnIoEmbutido.VerificarPacote(); return 0; } catch { return 2; } }
+        if (args.Contains("--instalar-pawnio-aceite-explicito"))
+        {
+            try { return PawnIoEmbutido.InstalarComAceite() ? 3010 : 0; }
+            catch (Exception erro) { Console.Error.WriteLine(erro.Message); return erro is System.ComponentModel.Win32Exception win32 ? win32.NativeErrorCode : 1; }
+        }
         // Duas cópias disputariam a mesma porta: a segunda só abre o site e sai.
         using var trava = new Mutex(true, @"Local\SLTStressTestPlugin", out var primeira);
         if (!primeira)
@@ -24,6 +31,7 @@ internal static class Program
         }
 
         ApplicationConfiguration.Initialize();
+        PawnIoEmbutido.OferecerInstalacao();
 
         Sensores? sensores = null;
         Servidor? servidor = null;
@@ -51,8 +59,9 @@ internal static class Program
         menu.Items.Add($"Conectado em 127.0.0.1:{Servidor.Porta}").Enabled = false;
         if (!Inventario.PawnIoInstalado())
         {
-            menu.Items.Add("Instalar driver PawnIO (temperatura da CPU)…", null, (_, _) => Abrir("https://pawnio.eu/"));
+            menu.Items.Add("Instalar PawnIO incluído…", null, (_, _) => { PawnIoEmbutido.OferecerInstalacao(); MessageBox.Show("Reabra o plugin para atualizar os sensores após a instalação."); });
         }
+        menu.Items.Add("Licença, créditos e fontes do PawnIO…", null, (_, _) => PawnIoEmbutido.AbrirCreditos());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Sair", null, (_, _) => Application.Exit());
 
@@ -68,7 +77,7 @@ internal static class Program
         icone.BalloonTipTitle = "SLT Stress Test Plugin ligado";
         icone.BalloonTipText = Inventario.PawnIoInstalado()
             ? "Volte ao site: os sensores reais já aparecem no teste."
-            : "Volte ao site. Para a temperatura da CPU, instale o driver PawnIO pelo menu deste ícone.";
+            : "Volte ao site. O PawnIO está incluído e pode ser instalado pelo menu deste ícone.";
         icone.ShowBalloonTip(6000);
 
         Application.Run();

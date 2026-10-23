@@ -193,7 +193,7 @@ export function gerarRelatorio(container, dados) {
         <h3>Sensores reais (plugin v${esc(dados.plugin.versao)})</h3>
         <p>Temperatura, clocks e potência acima vieram dos sensores do hardware, lidos pelo SLT Stress Test Plugin.
           ${dados.plugin.memoria ? `Memória instalada: <strong>${esc(dados.plugin.memoria)}</strong>.` : ''}</p>
-        ${dados.plugin.pawnio ? '' : '<p class="nota">O driver PawnIO não estava instalado, então a temperatura e o clock por núcleo da CPU ficaram de fora (o clock veio do contador do Windows). Instale-o em <a href="https://pawnio.eu/" target="_blank" rel="noopener">pawnio.eu</a> e reabra o plugin.</p>'}
+        ${dados.plugin.pawnio ? '' : '<p class="nota">O driver PawnIO não estava instalado, então a temperatura e o clock por núcleo da CPU ficaram de fora (o clock veio do contador do Windows). O plugin 1.2.0 inclui o driver; use “Instalar PawnIO incluído” no menu da bandeja e reabra o plugin.</p>'}
         ${textoProtecao(dados.protecao)}
         <p class="nota">Valores que o seu hardware não informa simplesmente não aparecem: nada foi estimado no lugar.</p>
       </article>`

@@ -1,4 +1,4 @@
-export const DOWNLOAD_APK = 'https://github.com/mikerock12/slt-stress-test/releases/download/v1.1.0/SLTStressTest.apk';
+export const DOWNLOAD_APK = '/assets/downloads/SLTStressTest-v1.2.0.apk';
 export const androidDisponivel = () => typeof globalThis.SLTAndroid?.inventario === 'function';
 export function inventarioAndroid() {
   if (!androidDisponivel()) return null;

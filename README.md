@@ -5,9 +5,9 @@ Teste de estresse e benchmark de **CPU, GPU, memória e armazenamento**, da
 Windows e ranking comunitário persistente.
 
 **[Abrir o site](https://stresstest.smellsliketech.com.br)** ·
-[Baixar APK Android](https://github.com/mikerock12/slt-stress-test/releases/download/v1.1.0/SLTStressTest.apk) ·
+[Baixar APK Android](https://stresstest.smellsliketech.com.br/assets/downloads/SLTStressTest-v1.2.0.apk) ·
 [Baixar plugin Windows](https://github.com/mikerock12/slt-stress-test/releases/latest/download/SLTStressTestPlugin.exe) ·
-[Release e checksums](https://github.com/mikerock12/slt-stress-test/releases/tag/v1.1.0)
+[Release e checksums](https://github.com/mikerock12/slt-stress-test/releases/tag/v1.2.0)
 
 ## Escolha sua plataforma
 
@@ -59,6 +59,10 @@ suficientes, o relatório informa a ausência e agradece a contribuição, sem i
 Emuladores não entram nas médias de hardware físico. Regras e limites em [RANKING.md](RANKING.md).
 
 ## Rodar localmente
+
+Veja a [política de privacidade](https://stresstest.smellsliketech.com.br/privacidade.html)
+para entender os dados publicados e exportar ou excluir suas contribuições. O plugin Windows
+inclui o driver PawnIO assinado, licença e fontes, com instalação automática após a aceitação.
 
 ```bash
 npm run dev       # site estático em http://localhost:5173

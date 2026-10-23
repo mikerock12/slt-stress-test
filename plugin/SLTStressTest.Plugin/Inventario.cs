@@ -31,7 +31,8 @@ public static class Inventario
     public static bool PawnIoInstalado()
     {
         using var chave = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\PawnIO");
-        return chave is not null;
+        using var servico = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\PawnIO");
+        return chave is not null || servico is not null;
     }
 
     public static PenteMemoria[] Pentes()

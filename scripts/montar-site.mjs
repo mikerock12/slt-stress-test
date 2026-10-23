@@ -1,11 +1,19 @@
 // Monta dist/ só com o que vai ao ar (sem plugin, testes, scripts e documentação).
-// Uso: npm run build   →   npx wrangler pages deploy dist --project-name slt-stress-test
-import { cpSync, rmSync, mkdirSync } from 'node:fs';
+// Uso: npm run build; npm run deploy publica assets + API no Worker.
+import { cpSync, rmSync, mkdirSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { join, resolve } from 'node:path';
 
 const RAIZ = resolve(import.meta.dirname, '..');
 const DIST = join(RAIZ, 'dist');
-const PUBLICO = ['index.html', '_headers', 'css', 'js', 'assets'];
+const PUBLICO = ['index.html', 'privacidade.html', '_headers', 'css', 'js', 'assets'];
+
+// O APK público deve ser idêntico ao asset assinado da release, inclusive no CI.
+// Não depende do GitHub durante o build nem acessa a pasta privada de assinatura.
+const DOWNLOADS = join(RAIZ, 'assets', 'downloads');
+const [hashApk, nomeApk] = readFileSync(join(DOWNLOADS, 'SHA256SUMS.txt'), 'utf8').trim().split(/\s+/);
+if (!/^[a-f0-9]{64}$/.test(hashApk) || !/^SLTStressTest-v[\d.]+\.apk$/.test(nomeApk)) throw new Error('Manifesto do APK inválido.');
+if (createHash('sha256').update(readFileSync(join(DOWNLOADS, nomeApk))).digest('hex') !== hashApk) throw new Error('APK diferente do checksum publicado.');
 
 rmSync(DIST, { recursive: true, force: true });
 mkdirSync(DIST);

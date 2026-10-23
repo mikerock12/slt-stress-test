@@ -65,8 +65,15 @@ artefato, nunca a chave de distribuição. `publicar-android.ps1` cria chave e s
 `.local/assinatura-android/` (ignorada pelo Git) e gera `.local/release/SLTStressTest.apk`.
 Preservar essa pasta privada em backup para futuras atualizações do mesmo aplicativo.
 
-Release do GitHub `v1.1.0`, asset `SLTStressTest.apk` e `SHA256SUMS.txt`. A mesma release deve
+Release do GitHub `v1.2.0`, asset `SLTStressTest.apk` e `SHA256SUMS.txt`. A mesma release deve
 ter `SLTStressTestPlugin.exe`, pois o download Windows usa `releases/latest/download/`.
+
+O botão do site baixa uma cópia idêntica do APK diretamente do domínio oficial, em
+`/assets/downloads/SLTStressTest-v1.2.0.apk`, sem redirecionamento para o GitHub. A cópia
+pública e seu `SHA256SUMS.txt` ficam em `assets/downloads/`; o build confere a integridade
+antes de publicar. Em uma atualização, substituir por um novo nome versionado, atualizar
+o checksum, `js/android.js`, o link HTML, `_headers` e o README. Nunca colocar a chave ou
+a senha nessa pasta pública. A release continua sendo a origem e a alternativa de download.
 
 Referências: [HardwarePropertiesManager](https://developer.android.com/reference/android/os/HardwarePropertiesManager),
 [PowerManager](https://developer.android.com/reference/android/os/PowerManager),

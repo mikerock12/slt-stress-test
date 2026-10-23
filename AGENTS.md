@@ -88,7 +88,8 @@ dotnet publish plugin/SLTStressTest.Plugin -c Release -o plugin/publicado
 - O `.exe` é publicado como asset `SLTStressTestPlugin.exe` de uma release do GitHub; o link do
   site aponta para `releases/latest/download/`.
 - Sem o driver PawnIO não há temperatura/clock por núcleo da CPU: o clock vem do contador de
-  desempenho do Windows. Não distribuir o PawnIO junto.
+  desempenho do Windows. O dono autorizou em 23/10/2026 incluir o PawnIO no exe, com instalação
+  e configuração automáticas, licença, fontes exigidas e créditos; integração em andamento.
 - O plugin pede administrador (manifesto). O terminal de desenvolvimento do dono já roda
   elevado.
 
@@ -116,6 +117,11 @@ MAX STRESS de 2 min, conferir o relatório, a impressão em PDF e o JSON exporta
 - Repositório público no GitHub; backup em `G:/Meu Drive/Backups/Smells Like Tech - Stress Test/`.
 
 ## Última entrega (23/10/2026)
+
+Em andamento: Codex investiga o download APK em 100% no POCO X7 PRO, branch
+`codex/corrige-download-apk`; detalhes e arquivos sob responsabilidade em contexto.md.
+Inclui também PawnIO no exe e política/controles LGPD, autorizados pelo dono. Em 23/10/2026,
+o dono autorizou expressamente aceitar a GPL/exceção e instalar o driver neste PC para validar.
 
 PR #6 integrado na main, CI verde de site/API, Android e plugin. Release v1.1.0 e produção publicadas.
 README e seção Sobre do GitHub atualizados com APK Android, plugin Windows e ranking;

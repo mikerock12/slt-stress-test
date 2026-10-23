@@ -1,5 +1,11 @@
 # SLT Stress Test Plugin (Windows)
 
+Versão 1.2.0: o exe inclui o driver oficial PawnIO 2.2.0 x64 assinado, licença e fontes.
+Na primeira execução sem o driver, apresenta os termos e oferece instalação/configuração
+automáticas pelas APIs PnP do Windows, sem download separado. É possível continuar sem
+instalar. Exige Windows x64 10 1809 ou posterior; não desativa assinatura nem proteções.
+O menu da bandeja abre a pasta com licença, créditos e fontes completos.
+
 Programa de bandeja que liga o site aos sensores reais do computador. Escuta só em
 `http://127.0.0.1:5299` e só responde às origens do site (`https://stresstest.smellsliketech.com.br`
 e `http://localhost:5173` em desenvolvimento).
@@ -32,8 +38,18 @@ dotnet publish plugin/SLTStressTest.Plugin -c Release -o plugin/publicado
 
 Gera um único `SLTStressTestPlugin.exe` (~60 MB, .NET embutido). Pede administrador ao abrir,
 porque o Windows exige isso para SMART e sensores. Temperatura e clock por núcleo da CPU
-precisam do driver PawnIO instalado à parte; sem ele, o clock vem do contador de desempenho
+precisam do driver PawnIO incluído e instalado; sem ele, o clock vem do contador de desempenho
 do Windows.
+
+Para conferir os recursos do pacote sem instalar nem abrir interface:
+`SLTStressTestPlugin.exe --verificar-pacote` (código 0 em caso de sucesso).
+Em implantação administrada, somente após aceitação expressa da licença, é possível usar
+`SLTStressTestPlugin.exe --instalar-pawnio-aceite-explicito`: instala sem diálogos, retorna 0
+ou 3010 se precisar reiniciar. Nunca reinicia automaticamente. O CI não usa essa opção.
+Arquivos de terceiros em `%ProgramFiles%/Smells Like Tech/SLT Stress Test/PawnIO-2.2.0/`.
+O driver permanece instalado ao sair do plugin. Para removê-lo, use o Gerenciador de
+Dispositivos, Dispositivos de software > PawnIO > Desinstalar dispositivo. Outros programas
+também podem depender dele; não o removemos automaticamente ao fechar.
 
 ## Publicar uma versão
 

@@ -6,3 +6,8 @@
 
 /assets/*
   Cache-Control: public, max-age=604800
+
+/assets/downloads/SLTStressTest-v1.2.0.apk
+  Content-Type: application/vnd.android.package-archive
+  Content-Disposition: attachment; filename="SLTStressTest-v1.2.0.apk"
+  Cache-Control: public, max-age=604800, no-transform

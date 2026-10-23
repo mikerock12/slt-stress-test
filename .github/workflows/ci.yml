@@ -42,6 +42,11 @@ jobs:
         with:
           dotnet-version: 10.0.x
       - run: dotnet publish plugin/SLTStressTest.Plugin -c Release -o plugin/publicado
+      - name: Conferir recursos e integridade do driver incluído (sem instalar)
+        shell: pwsh
+        run: |
+          $verificacao = Start-Process -FilePath plugin/publicado/SLTStressTestPlugin.exe -ArgumentList '--verificar-pacote' -PassThru -Wait -WindowStyle Hidden
+          if ($verificacao.ExitCode -ne 0) { throw 'Pacote PawnIO inválido.' }
       - uses: actions/upload-artifact@v4
         with:
           name: SLTStressTestPlugin
