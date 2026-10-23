@@ -148,6 +148,13 @@ links. Nenhum código delas foi copiado.
 
 ## Em andamento
 
+- PR #7 integrado (`6dae97e490402182f0400ffa193c0b6fa8e1ac7b`), CI final verde, migração 0002
+  aplicada antes do deploy; Worker `77ce3061-1048-482c-ae34-779f73340c4b`. Release 1.2.0
+  publicada com exe do CI, APK e fontes. Download real em produção concluiu no Chrome;
+  página de privacidade e quatro rankings 200, corpos inválidos 400, sem fixtures.
+  Revisão de referências encontrou URL da ANPD inválida. Codex finaliza a manutenção na
+  branch `codex/corrige-link-anpd`, APK 1.2.1 (versionCode 3), documento e links atualizados;
+  mantém a release 1.2.0 e seu download disponíveis. Plugin Windows permanece 1.2.0.
 - Codex, branch `codex/corrige-download-apk`: investigar download que chega a 100% sem
   concluir no POCO X7 PRO; conferir transferência/assinatura e corrigir distribuição se
   necessário. Dono de js/android.js, index.html, build, cabeçalhos e documentação nesta tarefa.

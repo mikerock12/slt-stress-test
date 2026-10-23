@@ -120,6 +120,8 @@ MAX STRESS de 2 min, conferir o relatório, a impressão em PDF e o JSON exporta
 
 Em andamento: Codex investiga o download APK em 100% no POCO X7 PRO, branch
 `codex/corrige-download-apk`; detalhes e arquivos sob responsabilidade em contexto.md.
+PR #7 integrado e v1.2.0 publicada. Manutenção em `codex/corrige-link-anpd` corrige o link
+oficial da ANPD no documento online e no APK 1.2.1, mantendo o plugin 1.2.0 sem alterações.
 Inclui também PawnIO no exe e política/controles LGPD, autorizados pelo dono. Em 23/10/2026,
 o dono autorizou expressamente aceitar a GPL/exceção e instalar o driver neste PC para validar.
 

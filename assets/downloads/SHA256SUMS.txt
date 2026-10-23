@@ -1,1 +1,1 @@
-c39b0dad141d443833ab59f47eddb8dd28920553a1b720ffc768558596b34f0f  SLTStressTest-v1.2.0.apk
+ef783be779cd98c9b55eaa6ea7bef4299f797fd0a91932eaf81c69bc5a4e6fc8  SLTStressTest-v1.2.1.apk

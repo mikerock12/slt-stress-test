@@ -69,11 +69,11 @@ A biblioteca C++ usa alinhamento ELF de 16 KB (LOAD e RELRO), compatível també
 dispositivos de 4 KB. Validar o APK com `zipalign -c -P 16 4` e os segmentos das quatro ABIs.
 Isso não comprova a execução em todos os aparelhos; sensores e root ainda exigem teste físico.
 
-Release do GitHub `v1.2.0`, asset `SLTStressTest.apk` e `SHA256SUMS.txt`. A mesma release deve
+Release do GitHub `v1.2.1`, asset `SLTStressTest.apk` e `SHA256SUMS.txt`. A mesma release deve
 ter `SLTStressTestPlugin.exe`, pois o download Windows usa `releases/latest/download/`.
 
 O botão do site baixa uma cópia idêntica do APK diretamente do domínio oficial, em
-`/assets/downloads/SLTStressTest-v1.2.0.apk`, sem redirecionamento para o GitHub. A cópia
+`/assets/downloads/SLTStressTest-v1.2.1.apk`, sem redirecionamento para o GitHub. A cópia
 pública e seu `SHA256SUMS.txt` ficam em `assets/downloads/`; o build confere a integridade
 antes de publicar. Em uma atualização, substituir por um novo nome versionado, atualizar
 o checksum, `js/android.js`, o link HTML, `_headers` e o README. Nunca colocar a chave ou
