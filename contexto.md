@@ -68,6 +68,12 @@ links. Nenhum código delas foi copiado.
 - Pendente de verificar em produção: o Chrome (Local Network Access) pede permissão quando um
   site https acessa 127.0.0.1; conferir o fluxo no domínio real.
 
+- 22/10/2026 — Teste em produção no Chrome 156 do dono: o site abre (DNS liberado), mas o
+  pedido ao plugin fica parado na permissão "acesso à rede local" (estado `prompt`) até a
+  pessoa clicar em Permitir. Corrigido no PR #2 (deploy `0baa3cb3-3d2c-4b9f-a1c4-419b8730cf11`):
+  com a permissão pendente o site espera até 60 s e mostra como permitir; se negada, como
+  liberar. Aguardando o dono clicar em Permitir para concluir o teste ponta a ponta.
+
 ## Em andamento
 
 - (vazio)
