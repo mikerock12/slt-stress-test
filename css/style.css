@@ -312,6 +312,16 @@ code { background: var(--panel-2); border: 1px solid var(--line); border-radius:
 }
 
 /* ---------- impressão / PDF ---------- */
+.ranking-filtros { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin: 20px 0; }
+.ranking-filtros label { display: flex; flex-direction: column; gap: 6px; max-width: 100%; }
+.ranking-filtros input { max-width: 100%; min-width: 0; padding: 10px; background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 6px; }
+.tabela-rolagem { overflow-x: auto; }
+.tabela-rolagem table { width: 100%; border-collapse: collapse; }
+.tabela-rolagem td, .tabela-rolagem th { text-align: left; border-bottom: 1px solid var(--line); padding: 12px; }
+.comparacao { margin: 20px 0; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 480px; overflow: auto; font-size: .8rem; }
+[data-dispositivo="celular"] a[href="#plugin"] { display: none; }
+@media print { #plugin, #android { display: none !important; } pre { max-height: none; } }
 @media print {
   :root { --text: #111; --muted: #555; --line: #ccc; --panel: #fff; --panel-2: #fff; --accent: #8a5a00; }
   body { background: #fff; color: #111; font-size: 12px; }

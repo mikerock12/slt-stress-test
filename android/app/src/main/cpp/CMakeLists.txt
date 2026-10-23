@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.22.1)
+project(slt_memoria LANGUAGES CXX)
+add_library(slt_memoria SHARED memoria.cpp)
+target_compile_features(slt_memoria PRIVATE cxx_std_17)
+target_compile_options(slt_memoria PRIVATE -O2)

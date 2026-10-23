@@ -7,7 +7,7 @@ const RAIZ = resolve(import.meta.dirname, '..');
 const arquivos = [];
 (function varrer(dir) {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
-    if (['node_modules', '.git', 'dist', 'bin', 'obj', 'publicado'].includes(e.name)) continue;
+    if (['node_modules', '.git', '.local', '.gradle', 'dist', 'build', 'bin', 'obj', 'publicado'].includes(e.name)) continue;
     const p = join(dir, e.name);
     if (e.isDirectory()) varrer(p);
     else if (/\.m?js$/.test(e.name)) arquivos.push(p);

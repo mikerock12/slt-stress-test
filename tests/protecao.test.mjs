@@ -4,6 +4,11 @@ import { ProtecaoTemperatura, nivel, normalizarLimites } from '../js/protecao.js
 import { avaliar, resumirComponente } from '../js/avaliacao.js';
 import { analisar } from '../js/relatorio.js';
 
+test('proteção/interrupção Android não aparece como aprovado mesmo em teste só de GPU', () => {
+  const r=analisar({componentes:{gpu:{series:{fps:Array(120).fill(30),artefatos:[0]},info:{}}},interrupcaoAndroid:'Bateria chegou a 45 °C.'});
+  assert.equal(r.geral.status,'atencao');assert.match(r.geral.titulo,/interrompido no Android/);
+});
+
 test('parada por temperatura vira atenção no componente e no veredito geral', () => {
   const serie = Array.from({ length: 30 }, () => 20);
   const disparo = { componente: 'cpu', temp: 96.4, limite: 95 };

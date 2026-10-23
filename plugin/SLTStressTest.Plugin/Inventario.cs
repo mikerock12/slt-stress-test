@@ -11,6 +11,16 @@ namespace SLTStressTest.Plugin;
 /// </summary>
 public static class Inventario
 {
+    public static object? Cpu()
+    {
+        try
+        {
+            using var busca = new ManagementObjectSearcher("SELECT Manufacturer, Name, MaxClockSpeed FROM Win32_Processor");
+            var o = busca.Get().Cast<ManagementObject>().FirstOrDefault();
+            return o is null ? null : new { fabricante = Texto(o["Manufacturer"]), modelo = Texto(o["Name"]), frequenciaMHz = Opcional(o["MaxClockSpeed"]), fonte = "WMI Win32_Processor.MaxClockSpeed (nominal, não clock instantâneo)" };
+        }
+        catch { return null; }
+    }
     public static bool EhAdministrador()
     {
         using var id = WindowsIdentity.GetCurrent();
@@ -52,6 +62,19 @@ public static class Inventario
     public static DiscoFisico[] Discos()
     {
         var discos = new List<DiscoFisico>();
+        var fabricantes = new Dictionary<string, string>();
+        try
+        {
+            using var buscaFabricantes = new ManagementObjectSearcher("SELECT Index, Manufacturer FROM Win32_DiskDrive");
+            foreach (var o in buscaFabricantes.Get().Cast<ManagementObject>())
+            {
+                var fabricante = Texto(o["Manufacturer"]);
+                if (fabricante is not null && !fabricante.Contains("Standard", StringComparison.OrdinalIgnoreCase)
+                    && !fabricante.Contains("padrão", StringComparison.OrdinalIgnoreCase))
+                    fabricantes[o["Index"].ToString()!] = fabricante;
+            }
+        }
+        catch { /* fabricante não disponível; não inferir pelo desempenho */ }
         var escopo = new ManagementScope(@"\\.\root\Microsoft\Windows\Storage");
         try
         {
@@ -67,6 +90,7 @@ public static class Inventario
                 {
                     Numero = id,
                     Nome = Texto(o["FriendlyName"]) ?? "Disco",
+                    Fabricante = fabricantes.GetValueOrDefault(id),
                     Tipo = (int?)Numero(o["MediaType"]) switch { 3 => "HDD", 4 => "SSD", 5 => "SCM", _ => "desconhecido" },
                     Barramento = (int?)Numero(o["BusType"]) switch { 17 => "NVMe", 11 => "SATA", 7 => "USB", 8 => "RAID", 10 => "SAS", _ => "outro" },
                     Firmware = Texto(o["FirmwareVersion"]),
@@ -184,6 +208,7 @@ public sealed class DiscoFisico
 {
     public string Numero { get; init; } = "";
     public string Nome { get; init; } = "";
+    public string? Fabricante { get; init; }
     public string Tipo { get; init; } = "";
     public string Barramento { get; init; } = "";
     public string? Firmware { get; init; }

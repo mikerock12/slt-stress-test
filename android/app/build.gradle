@@ -1,0 +1,34 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'br.com.smellsliketech.stresstest'
+    compileSdk 35
+    ndkVersion '27.0.12077973'
+    externalNativeBuild { cmake { path file('src/main/cpp/CMakeLists.txt'); version '3.22.1' } }
+    defaultConfig {
+        applicationId 'br.com.smellsliketech.stresstest'
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName '1.0.0'
+        ndk { abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64', 'x86' }
+    }
+    signingConfigs {
+        if (System.getenv('SLT_KEYSTORE')) {
+            release {
+                storeFile file(System.getenv('SLT_KEYSTORE'))
+                storePassword System.getenv('SLT_STORE_PASSWORD')
+                keyAlias 'slt'
+                keyPassword System.getenv('SLT_STORE_PASSWORD')
+            }
+        }
+    }
+    buildTypes { release { if (System.getenv('SLT_KEYSTORE')) signingConfig signingConfigs.release } }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
+tasks.register('copiarSite', Copy) {
+    from rootProject.file('..')
+    include 'index.html', 'css/**', 'js/**', 'assets/**'
+    into layout.buildDirectory.dir('generated/siteAssets/slt')
+}
+android.sourceSets.main.assets.srcDir layout.buildDirectory.dir('generated/siteAssets')
+tasks.named('preBuild').configure { dependsOn 'copiarSite' }

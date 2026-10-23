@@ -3,6 +3,7 @@ import { METRICAS, NOMES, avaliar, resumirComponente, vereditoGeral } from './av
 import { formatarDuracao, formatarNumero } from './metricas.js';
 import { graficoRelatorio } from './graficos.js';
 import { DOWNLOAD } from './plugin.js';
+import { integrarComparacao } from './ranking.js';
 
 const ESTADOS_DISCO = { bom: 'Bom', cuidado: 'Cuidado', ruim: 'Ruim' };
 const FASES_CDM = [
@@ -60,6 +61,10 @@ export function analisar(dados) {
     geral.status = 'atencao';
     geral.titulo = 'Interrompido pela proteção de temperatura';
   }
+  if (dados.interrupcaoAndroid && geral.status !== 'falha') {
+    geral.status = 'atencao';
+    geral.titulo = 'Teste interrompido no Android';
+  }
   return { geral, componentes };
 }
 
@@ -96,7 +101,8 @@ function detalheInfo(id, info = {}, opcoes = {}) {
   if (id === 'gpu') itens.push(info.renderer, info.resolucao, `${info.passos} passos de raymarching`);
   if (id === 'memoria') itens.push(`${info.alocadoMiB ?? opcoes.mib} MiB testados`);
   if (id === 'disco' && info.modo === 'nativo') itens.push(`disco real ${info.unidade} sem cache (plugin)`);
-  if (id === 'disco' && info.modo !== 'nativo') itens.push('armazenamento do navegador (OPFS)');
+  if (id === 'disco' && info.modo === 'android') itens.push('armazenamento nativo Android · SEQ1M/RND4K Q1 · leitura pode incluir cache');
+  else if (id === 'disco' && info.modo !== 'nativo') itens.push('armazenamento do navegador (OPFS)');
   if (id === 'disco') itens.push(`arquivo de ${info.arquivoMiB ?? opcoes.mib} MiB`, `${info.ciclos ?? 0} ciclo(s) completos`);
   return itens.filter(Boolean).map(esc).join(' · ');
 }
@@ -215,7 +221,7 @@ export function gerarRelatorio(container, dados) {
       <span class="veredito-icone" aria-hidden="true">${{ ok: '✔', atencao: '!', falha: '✖', na: '?' }[geral.status]}</span>
       <div>
         <strong>${esc(geral.titulo)}</strong>
-        <p>${dados.protecao?.disparo && geral.status !== 'falha'
+        <p>${dados.interrupcaoAndroid && geral.status !== 'falha' ? esc(dados.interrupcaoAndroid) : dados.protecao?.disparo && geral.status !== 'falha'
           ? `O teste parou porque a ${esc(NOMES[dados.protecao.disparo.componente])} passou do limite de ${dados.protecao.disparo.limite} °C que você definiu. Até a parada não houve erros, mas a refrigeração precisa de atenção antes de um teste longo.`
           : {
           ok: 'Nenhum erro de cálculo, de memória, de imagem ou de dados, e o desempenho se manteve. Para este teste, o sistema se comportou como um computador estável.',
@@ -230,7 +236,19 @@ export function gerarRelatorio(container, dados) {
 
     ${cdm || saude ? `<div class="grade-dupla">${cdm}${saude}</div>` : ''}
 
-    ${sensoresReais ?? `<article class="cartao indisponivel">
+    ${dados.android ? `<article class="cartao"><h3>Dados nativos do Android</h3>
+      <p>${esc(dados.android.marca)} ${esc(dados.android.modelo)} · Android ${esc(dados.android.android)}.
+        CPU, memória e armazenamento usam cargas nativas. A GPU usa WebGL2.</p>
+      ${dados.android.emulado ? '<p class="alerta">Ambiente emulado: serve para validar o funcionamento e fica fora das médias de hardware físico.</p>' : ''}
+      <dl class="lista-sistema">
+        <div><dt>Processador / SoC</dt><dd>${esc(dados.android.cpu?.modelo || 'não disponível')}</dd></div>
+        <div><dt>RAM informada pelo Android</dt><dd>${Number.isFinite(dados.android.memoria?.totalGB) ? `${formatarNumero(dados.android.memoria.totalGB, 2)} GiB` : 'não disponível'}</dd></div>
+        <div><dt>Frequência da RAM</dt><dd>${dados.android.memoria?.frequenciaMTs ? `${formatarNumero(dados.android.memoria.frequenciaMTs, 0)} MT/s` : 'não disponível'}</dd></div>
+        <div><dt>Temperatura da bateria</dt><dd>${Number.isFinite(dados.sensoresAndroid?.bateria?.tempC) ? `${formatarNumero(dados.sensoresAndroid.bateria.tempC, 1)} °C` : 'não disponível'}</dd></div>
+      </dl>
+      <p class="nota">Temperatura da bateria é uma leitura separada da CPU/GPU. Sensores dependem do fabricante; valores ausentes não foram estimados. Modelo dos chips de memória e SMART não são expostos pela API pública do Android.</p>
+      <details><summary>Todos os dados coletados e suas fontes</summary><pre>${esc(JSON.stringify({ inventario: dados.android, sensoresFinais: dados.sensoresAndroid }, null, 2))}</pre></details>
+    </article>` : sensoresReais ?? `<article class="cartao indisponivel">
       <h3>Temperatura e clocks reais</h3>
       <p>Por segurança, o navegador não deixa sites lerem sensores. Por isso <strong>temperatura média,
         clock real da GPU e frequência da memória não aparecem aqui</strong> e não foram inventados.
@@ -278,9 +296,10 @@ export function gerarRelatorio(container, dados) {
   }
 
   const texto = textoResumo(dados, analise);
+  integrarComparacao(container, dados);
   container.querySelector('.relatorio-acoes').addEventListener('click', async (e) => {
     const acao = e.target.closest('[data-acao]')?.dataset.acao;
-    if (acao === 'pdf') window.print();
+    if (acao === 'pdf') { if (dados.android) globalThis.SLTAndroid.imprimir(); else window.print(); }
     if (acao === 'novo') document.dispatchEvent(new CustomEvent('slt:novo-teste'));
     if (acao === 'copiar') {
       try { await navigator.clipboard.writeText(texto); e.target.textContent = 'Copiado!'; }
@@ -289,6 +308,7 @@ export function gerarRelatorio(container, dados) {
     }
     if (acao === 'json') {
       const json = JSON.stringify({ versao: 1, ...dados, analise }, null, 2);
+      if (dados.android) { globalThis.SLTAndroid.exportar(json); return; }
       const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
       const a = document.createElement('a');
       a.href = url;
