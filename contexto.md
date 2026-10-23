@@ -63,9 +63,10 @@ links. Nenhum código delas foi copiado.
   exportado para backup; não reproduzir links temporários que o Wrangler possa imprimir.
 - Backup em `G:/Meu Drive/Backups/Smells Like Tech - Stress Test/2026-10-23/`, com fontes,
   bundle Git, APK/exe/checksums, dump D1 e verificações. Hashes dos artefatos conferidos.
-  Chave e senha de assinatura permanecem somente em `.local/assinatura-android/` nesta
-  máquina: a revisão automática recusou a exportação desses segredos sem autorização
-  específica. O backup padrão e o Git não os incluem.
+  Após autorização expressa do dono em 23/10/2026, chave e senha de assinatura foram
+  copiadas de `.local/assinatura-android/` para `privado/assinatura-android/` nesse backup.
+  Integridade dos dois arquivos conferida sem exibir valores. Continuam fora do Git,
+  dos arquivos de fontes e da release; a autorização vale para essa pasta/data.
 
 - 22/10/2026 — **No ar**: https://stresstest.smellsliketech.com.br (Cloudflare Workers com
   assets, Worker `slt-stress-test`, versão `f004a75c-7074-4c46-84e6-0b857f62c970`, custom
@@ -156,6 +157,9 @@ links. Nenhum código delas foi copiado.
 
 ## Histórico
 
+- 23/10/2026 — Backup privado da chave e senha Android concluído por autorização expressa
+  do dono, em `2026-10-23/privado/assinatura-android/` na pasta de backup do Drive.
+  Cópias conferidas por hash, sem exibir segredos; material permanece fora do Git e da release.
 - 23/10/2026 — Android/APK e ranking D1 entregues no PR #6, merge `ac241d5`, CI verde nos três
   jobs, 40/40 testes JS/SQLite, cargas Java e MAX STRESS Android com memória NDK conferidos.
   Release v1.1.0, produção e backup no Drive atualizados. Sem dados sintéticos em produção.

@@ -128,5 +128,9 @@ frequências desconhecidas e medidas; envio opt-in, sem séries sintéticas no b
 Emuladores identificados ficam fora das médias de hardware físico. A chave e a senha de
 assinatura em `.local/assinatura-android/` são privadas: não imprimir, versionar nem copiar
 para a nuvem sem autorização específica. O backup padrão exclui esses arquivos.
+Exceção autorizada expressamente pelo dono em 23/10/2026: cópia dos dois arquivos em
+`2026-10-23/privado/assinatura-android/` dentro da pasta de backup abaixo, com integridade
+conferida. Essa autorização se limita a essa pasta/data; os segredos continuam fora do Git
+e da release.
 Backup de fontes, histórico, release e dump D1 conferido em
 `G:/Meu Drive/Backups/Smells Like Tech - Stress Test/2026-10-23/`.
