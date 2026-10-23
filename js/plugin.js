@@ -31,9 +31,10 @@ export async function permissaoRedeLocal() {
 // Devolve a apresentação do plugin ou null se ele não estiver ligado.
 // Com a permissão pendente, o Chrome segura o pedido até a pessoa responder ao aviso:
 // por isso o tempo de espera é longo nesse caso.
+// Mesmo com 'denied' a tentativa é feita: uma página local (ou um navegador embutido) fala
+// com 127.0.0.1 sem passar por essa permissão, e o estado informado não reflete isso.
 export async function detectarPlugin() {
   const permissao = await permissaoRedeLocal();
-  if (permissao === 'denied') return null;
   try {
     const ola = await pedir('/v1/ola', { tempo: permissao === 'prompt' ? 60000 : 1500 });
     return ola.protocolo === PROTOCOLO ? ola : null;

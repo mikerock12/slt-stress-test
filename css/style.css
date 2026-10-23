@@ -239,6 +239,32 @@ code { background: var(--panel-2); border: 1px solid var(--line); border-radius:
 .grade-cdm small { display: block; font-size: 0.72rem; }
 .grade-cdm strong { font-size: 1.1rem; font-variant-numeric: tabular-nums; }
 
+/* ---------- proteção de temperatura ---------- */
+.protecao { margin-top: 18px; padding: 16px 18px; }
+.protecao .concordo { margin: 0 0 10px; }
+.protecao-limites { display: flex; gap: 18px; flex-wrap: wrap; }
+.protecao-limites label { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.protecao-limites input {
+  width: 72px; background: var(--ink-soft); color: var(--text); border: 1px solid var(--line);
+  border-radius: 8px; padding: 6px 8px; font: inherit;
+}
+.protecao .nota { margin: 10px 0 0; }
+.ruim-texto { color: var(--bad); }
+.temperaturas { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.temp {
+  display: flex; align-items: baseline; gap: 6px; padding: 8px 12px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--panel); font-variant-numeric: tabular-nums;
+}
+.temp strong { font-size: 1.3rem; }
+.temp small { font-size: 0.78rem; }
+.temp.ok { border-color: #1f6b3e; }
+.temp.ok strong { color: var(--ok); }
+.temp.perto { border-color: #6b4a12; background: #1f1505; }
+.temp.perto strong { color: var(--warn); }
+.temp.limite { border-color: var(--bad); background: #2a0b0e; }
+.temp.limite strong { color: var(--bad); }
+.temp.sem strong { color: var(--muted); font-size: 1rem; }
+
 /* ---------- como funciona / créditos ---------- */
 .grade-explica { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
 .grade-explica p { color: #d3d9e3; font-size: 0.95rem; }

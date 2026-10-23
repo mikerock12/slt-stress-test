@@ -38,6 +38,7 @@ Site estático, sem build e sem dependências de execução (HTML + CSS + ES mod
 | `js/testes/*.js` | Um módulo por teste: `cpu`, `gpu`, `memoria`, `disco`, `pressao` |
 | `js/workers/*.worker.js` | Carga pesada fora da thread principal |
 | `js/plugin.js` | Cliente do plugin local (detecção, sensores, SMART, benchmark) |
+| `js/protecao.js` | Proteção de temperatura (limites CPU/GPU, para o teste após 3 s acima). Testada |
 | `js/testes/disco-plugin.js` | Teste de disco real via plugin (substitui o OPFS quando escolhido) |
 | `plugin/SLTStressTest.Plugin/` | Plugin Windows (.NET 10, bandeja + Kestrel em 127.0.0.1:5299, LibreHardwareMonitorLib). Ver `plugin/README.md` |
 | `tests/*.test.mjs` | `node --test` das partes puras |

@@ -86,6 +86,19 @@ links. Nenhum código delas foi copiado.
   módulo publicado: sem queda → "Aprovado: sistema estável"; com 33% de queda → "Aprovado com
   ressalvas". JS 19/19.
 
+- 22/10/2026 — **Proteção de temperatura** (pedido do dono: "controle de temperatura da CPU
+  e GPU no teste nativo"). Com o plugin conectado aparece o bloco de limites (padrão CPU
+  95 °C, GPU 90 °C, faixa 60–105/60–100, salvo no navegador, pode desligar). Durante o teste,
+  faixa ao vivo com a temperatura de CPU e GPU (verde/amarelo a 5 °C do limite/vermelho);
+  aviso no registro perto do limite; acima do limite por 3 leituras seguidas, todos os testes
+  param e o relatório mostra "Interrompido pela proteção de temperatura", o motivo no
+  componente e as máximas. Vale mesmo se o componente quente não estava em teste. Sem PawnIO
+  não há temperatura de CPU (a proteção avisa isso). Validado no navegador com leituras
+  simuladas (CPU 68→82 °C, limite 75 °C: parou aos 79 °C em 6 s). JS 25/25.
+- Corrigido junto: o site desistia do plugin quando a permissão de rede local aparecia como
+  `denied`, mas página local (e navegadores embutidos) acessam 127.0.0.1 assim mesmo. Agora
+  sempre tenta e só mostra o aviso de bloqueio se o pedido falhar.
+
 ## Em andamento
 
 - (vazio)

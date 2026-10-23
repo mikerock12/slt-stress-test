@@ -125,6 +125,17 @@
         <label><input type="radio" name="duracao" value="0"><span>Indefinido<small>até você parar</small></span></label>
       </div>
 
+      <div class="cartao protecao" id="protecao" hidden>
+        <label class="concordo"><input type="checkbox" id="protecao-ativa" checked>
+          Proteção de temperatura: parar o teste se passar do limite</label>
+        <div class="protecao-limites">
+          <label>CPU até <input type="number" id="limite-cpu" min="60" max="105" step="1" value="95"> °C</label>
+          <label>GPU até <input type="number" id="limite-gpu" min="60" max="100" step="1" value="90"> °C</label>
+        </div>
+        <p class="nota" id="protecao-nota">Com o plugin, a temperatura real aparece durante o teste. Se ficar
+          acima do limite por 3 segundos seguidos, todos os testes param na hora e o relatório mostra o motivo.</p>
+      </div>
+
       <h2><span class="passo">3</span> Iniciar</h2>
       <div class="iniciar">
         <button type="button" class="botao" id="btn-selecionados">Testar selecionados</button>
@@ -141,6 +152,7 @@
         </div>
         <button type="button" class="botao parar" id="btn-parar">■ Parar e ver relatório</button>
       </div>
+      <div class="temperaturas" id="temperaturas" hidden aria-live="off"></div>
       <div class="progresso"><div id="barra-progresso"></div></div>
       <p class="nota">Mantenha esta aba visível: com a aba escondida, o navegador pausa o teste de GPU.
         Acompanhe a temperatura com um programa nativo (veja <a href="#creditos">ferramentas recomendadas</a>).
