@@ -4,6 +4,7 @@
   "compatibility_date": "2026-10-19",
   "main": "worker/index.js",
   "vars": { "AMBIENTE": "producao" },
+  "triggers": { "crons": ["0 6 * * *"] },
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacidade e seus dados — SLT Stress Test</title>
+  <meta name="description" content="Como o SLT Stress Test trata dados de hardware, benchmarks, contribuições e pedidos de privacidade.">
+  <link rel="stylesheet" href="/css/style.css"><script type="module" src="/js/pagina-privacidade.js"></script>
+</head>
+<body>
+  <header class="topo"><a href="/">← Voltar ao SLT Stress Test</a></header>
+  <main>
+    <section class="bloco">
+      <p class="selo">Atualizada em 23 de outubro de 2026 · versão 2026-10-23</p>
+      <h1>Privacidade e seus dados</h1>
+      <p>Responsável pelo tratamento: <strong>Smells Like Tech Informática, CNPJ 30.054.253/0001-09</strong>.
+        Contato para privacidade e exercício de direitos: <a href="mailto:contato@smellsliketech.com.br">contato@smellsliketech.com.br</a>.</p>
+      <p>Você pode executar os testes e exportar o relatório sem contribuir para o ranking. A caixa de contribuição começa desmarcada.
+        Consultar uma comparação envia dados técnicos à API; publicar o teste é uma escolha separada.</p>
+    </section>
+    <section class="bloco cartao">
+      <h2>O que fica no aparelho e o que é enviado</h2>
+      <p>Os testes rodam no navegador, aplicativo Android ou plugin Windows. O relatório local pode conter inventário, sensores,
+        unidades e logs mais detalhados. PDF e JSON ficam onde você decidir salvá-los; revise seu conteúdo antes de compartilhá-los.</p>
+      <p>Ao concluir o teste, a comparação consulta nossa API com hardware identificado (marca, modelo, capacidade e frequência disponível),
+        sistema operacional/navegador, configurações, duração, séries numéricas e resumo do teste. Sem contribuição, essa consulta é
+        processada em memória, sem gravar o relatório no banco de benchmarks.</p>
+      <p>Se você autorizar a contribuição, esses dados técnicos, o identificador e a data do teste ficam públicos na API e no ranking,
+        inclusive as séries completas. Não enviamos nome, e-mail, número de série, IMEI, caminhos de arquivos ou logs livres do aparelho.
+        A combinação de hardware e software pode distinguir um dispositivo; por isso tratamos esses dados com cuidado, mesmo sem seu nome.</p>
+      <p>Uma chave aleatória deste navegador/app identifica suas contribuições. No servidor guardamos seu hash, sem publicar esse hash.
+        Isso é pseudonimização: não equivale a anonimização irreversível. Não compartilhe a chave nem o armazenamento do navegador.</p>
+    </section>
+    <section class="bloco cartao">
+      <h2>Finalidades, bases e duração</h2>
+      <p>Usamos dados técnicos para entregar os testes e a comparação solicitados. A publicação no banco comunitário se baseia no seu
+        consentimento específico, dado pela caixa de contribuição ou pelo botão no relatório. Registramos a versão da política e a data
+        desse consentimento. A recusa não impede os testes nem a exportação local.</p>
+      <p>A contribuição permanece no banco ativo por até 12 meses, com limpeza diária, ou até seu pedido de exclusão.
+        As médias são recalculadas sem os testes removidos. Você pode revogar o consentimento e excluir as contribuições abaixo.
+        Uma nova contribuição exige nova escolha.</p>
+      <p>Contribuições anteriores sem registro da versão do consentimento ficam fora da consulta pública e das médias até nova autorização.
+        Continuam disponíveis para exportação e exclusão com a chave do próprio navegador.</p>
+      <p>Dados necessários à entrega do serviço são tratados para sua execução; medidas estritamente necessárias de segurança e prevenção
+        de abuso atendem ao interesse legítimo de proteger o serviço. Não usamos os dados para publicidade ou decisões sobre crédito,
+        emprego ou outros direitos. Contatos por e-mail são usados para responder ao pedido e cumprir obrigações aplicáveis.</p>
+      <p>Backups privados podem conter versões anteriores do banco. Pedidos recebidos pelo contato incluem a análise dessas cópias.
+        O banco mantém um registro mínimo de revogação, com hash e data, para impedir que testes excluídos retornem em uma restauração;
+        ele não é público e deve ser removido quando não houver mais cópias a sanear. Cópias já obtidas por terceiros da API pública não
+        estão sob nosso controle.</p>
+    </section>
+    <section class="bloco cartao">
+      <h2>Seus controles neste navegador ou aplicativo</h2>
+      <p>Use o mesmo navegador/app em que contribuiu. Excluir remove todas as contribuições associadas à chave local, não apenas um teste.
+        Se você apagou o armazenamento, perdeu o aparelho ou quer correção, acesso integral ou outro direito, entre em contato com os
+        identificadores dos testes disponíveis. Não envie senhas nem documentos sem solicitação justificada.</p>
+      <button type="button" class="botao" id="privacidade-exportar">Exportar minhas contribuições</button>
+      <p class="nota">A exportação é paginada em até 10 testes por arquivo.</p>
+      <label class="concordo"><input type="checkbox" id="privacidade-confirmar"> Quero revogar a autorização e excluir todas as minhas contribuições do banco ativo</label>
+      <button type="button" class="botao" id="privacidade-excluir">Excluir minhas contribuições</button>
+      <p id="privacidade-resultado" role="status" aria-live="polite"></p>
+      <p>Você pode pedir confirmação de tratamento, acesso, correção, portabilidade quando aplicável, informação de compartilhamento,
+        bloqueio ou eliminação de dados excessivos, revogação do consentimento e revisão de decisões automatizadas que afetem seus
+        interesses. O atendimento é gratuito; poderá ser necessária verificação proporcional para proteger os seus dados.
+        Você também pode peticionar à <a href="https://www.gov.br/anpd/pt-br/canais_atendimento/titular-de-dados">ANPD</a>.</p>
+    </section>
+    <section class="bloco cartao">
+      <h2>Armazenamento local e fornecedores</h2>
+      <p>O site não instala cookies de publicidade nem ferramentas de análise de audiência. Usa armazenamento local para lembrar o aviso
+        dos testes (<code>slt-aceite</code>), limites de temperatura (<code>slt-protecao</code>), uso do plugin (<code>slt-plugin</code>) e a
+        chave de contribuições (<code>slt-contribuinte</code>). Esses itens são funcionais; apagá-los remove preferências e a chave de
+        autoatendimento, mas não exclui sozinho os testes já publicados. O teste de disco cria arquivos temporários e tenta apagá-los ao encerrar.</p>
+      <p>Cloudflare hospeda site, API e banco D1 e processa IP, cabeçalhos e dados de conexão para entrega, segurança e controle de abuso.
+        O código da aplicação não grava IP no D1 nem envia corpos de benchmark para logs. Os fornecedores podem manter registros técnicos
+        conforme suas políticas. GitHub distribui releases; ao escolher essa alternativa, sua conexão também é tratada por ele.
+        Links de créditos abrem serviços com políticas próprias.</p>
+      <p>Cloudflare, GitHub e a infraestrutura de backup do Google Drive podem tratar dados fora do Brasil.
+        As condições e salvaguardas contratuais dos fornecedores devem ser consideradas em conjunto com os requisitos de transferência
+        internacional da LGPD. Veja <a href="https://www.cloudflare.com/privacypolicy/">Cloudflare</a>,
+        <a href="https://docs.github.com/pt/site-policy/privacy-policies/github-general-privacy-statement">GitHub</a> e
+        <a href="https://policies.google.com/privacy?hl=pt-BR">Google</a>.</p>
+      <p>O plugin conversa com o site apenas pelo endereço de loopback e mantém sensores/inventário no aparelho até a participação escolhida
+        no site. O PawnIO é um driver local de terceiros incluído no plugin, identificado na tela de instalação com licença e créditos;
+        não é uma ferramenta de análise de audiência. No Android, sensores avançados são opcionais e não instalam root.</p>
+    </section>
+    <section class="bloco cartao">
+      <h2>Proteção e alterações</h2>
+      <p>Aplicamos HTTPS, validação de campos, restrição de origem, limites de requisições e separação entre inventário local e dados públicos.
+        Nenhum serviço elimina todos os riscos. Em caso de incidente com risco ou dano relevante, adotaremos as providências e comunicações
+        exigidas. Não há cadastro ou coleta intencional de dados de crianças; a contribuição é destinada a pessoas adultas.</p>
+      <p>Mudanças de finalidade serão informadas antes de um novo consentimento. Esta página descreve o funcionamento do produto e seus
+        canais de direitos, com referência à <a href="https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm">LGPD</a>.</p>
+    </section>
+  </main>
+  <footer class="rodape"><p><a href="/">Voltar aos testes</a> · Smells Like Tech Informática</p></footer>
+</body>
+</html>

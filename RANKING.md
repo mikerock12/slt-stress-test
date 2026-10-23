@@ -11,6 +11,13 @@ ou clicar em “Contribuir com este teste” depois. Só então o teste é grava
 UUID aleatório para distinguir contribuições repetidas; o servidor armazena apenas seu hash.
 Esse hash não é público. IP é usado pelo limitador do Cloudflare, não gravado no D1.
 
+O identificador é pseudônimo, não anonimização irreversível. A API exige consentimento
+da política atual para publicar, registra versão/data e oferece POST
+`/api/privacidade/exportar` e `/api/privacidade/excluir`, autenticados pela chave local.
+Exclusão é atômica e revoga essa chave; conhecer o ID público de teste não autoriza excluir.
+Limpeza diária remove contribuições com mais de 12 meses. Política pública em
+[privacidade.html](privacidade.html), operação e restauração de backups em [PRIVACIDADE.md](PRIVACIDADE.md).
+
 São públicos: hardware identificado, parâmetros, séries numéricas, resumos recalculados e
 resultados detalhados de disco. Não se enviam logs livres, nome/e-mail da pessoa, números de
 série, rótulos de volumes ou caminhos locais. Dados privados do inventário completo permanecem

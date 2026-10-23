@@ -1,6 +1,7 @@
 import { VERSAO_BENCHMARK, PRINCIPAL_RANKING, chaveGrupo } from './benchmark.js';
 import { METRICAS, NOMES } from './avaliacao.js';
 import { formatarNumero } from './metricas.js';
+import { consentimentoRanking } from './privacidade.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const marca = (s = '') => /intel/i.test(s) ? 'Intel' : /amd|radeon/i.test(s) ? 'AMD' : /nvidia|geforce/i.test(s) ? 'NVIDIA' : /qualcomm|snapdragon|adreno/i.test(s) ? 'Qualcomm' : /arm|mali/i.test(s) ? 'ARM' : /apple/i.test(s) ? 'Apple' : null;
@@ -14,10 +15,14 @@ function tabelaReferencia(id, valores, comCliente = false) {
   return `<details><summary>Médias de todas as métricas</summary><div class="tabela-rolagem"><table><thead><tr><th>Métrica</th>${comCliente ? '<th>Seu teste</th>' : ''}<th>Comunidade</th><th>Contribuintes</th></tr></thead><tbody>${METRICAS[id].filter((m)=>valores?.[m.chave]?.n || valores?.[m.chave]?.valor!==null && valores?.[m.chave]?.valor!==undefined).map((m)=>{const r=valores[m.chave];return `<tr><th>${esc(m.rotulo)}</th>${comCliente ? `<td>${formatarNumero(r.valor,m.casas)} ${esc(m.unidade)}</td>` : ''}<td>${r.n>=5 ? `${formatarNumero(r.media,m.casas)} ${esc(m.unidade)}` : 'Informação insuficiente'}</td><td>${r.n}</td></tr>`;}).join('')}</tbody></table></div></details>`;
 }
 let contribuinteMemoria = null;
-function contribuinte() {
+function contribuinte(salvar = false) {
   try {
     let id = localStorage.getItem('slt-contribuinte');
-    if (!id) { id = crypto.randomUUID(); localStorage.setItem('slt-contribuinte', id); }
+    if (!id) {
+      id = contribuinteMemoria ||= crypto.randomUUID();
+      // Comparar sem contribuir não cria identificador persistente novo.
+      if (salvar) { localStorage.setItem('slt-contribuinte', id); contribuinteMemoria = null; }
+    }
     return id;
   } catch { return contribuinteMemoria ||= crypto.randomUUID(); }
 }
@@ -76,6 +81,7 @@ export function integrarComparacao(container, dados) {
     if (enviando) return; enviando = true;
     caixa.innerHTML = '<h3>Comparação com hardware igual</h3><p>Consultando o banco da comunidade…</p>';
     try {
+      if (salvar) { pacote.contribuinte = contribuinte(true); pacote.consentimento = consentimentoRanking(); }
       const r = await pedir(salvar ? '/api/benchmarks' : '/api/comparar', pacote);
       dados.comunidade = r;
       caixa.innerHTML = `<h3>Comparação com hardware igual</h3><p>${r.salvo ? 'Benchmark salvo. Obrigado pela contribuição!' : 'Comparação sem guardar este teste.'}</p>` +
@@ -85,11 +91,14 @@ export function integrarComparacao(container, dados) {
       caixa.innerHTML = `<h3>Comparação com hardware igual</h3><p>${esc(e.message)} Seu relatório está disponível e nenhum resultado foi confirmado como salvo.</p><button type="button" class="botao" data-repetir>Tentar novamente</button>`;
       caixa.querySelector('[data-repetir]').onclick = () => enviar(salvar);
     } finally { enviando = false; }
+    if (!rSalvo(dados)) caixa.insertAdjacentHTML('beforeend', '<p class="nota">Ao contribuir, você autoriza publicar o hardware, configurações e séries numéricas deste teste para comparação comunitária, por até 12 meses. A contribuição é opcional. <a href="/privacidade.html">Leia a política e gerencie suas contribuições</a>.</p>');
     const botao = caixa.querySelector('[data-contribuir]');
     if (botao) botao.onclick = () => enviar(true);
   };
   enviar(dados.compartilhar === true);
 }
+
+function rSalvo(dados) { return dados.comunidade?.salvo === true; }
 
 export function iniciarRanking() {
   const form = document.querySelector('#ranking-filtros'); if (!form) return;

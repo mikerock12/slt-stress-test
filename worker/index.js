@@ -1,10 +1,13 @@
 import { validarBenchmark, chaveGrupo, comparar, MIN_CONTRIBUINTES } from '../js/benchmark.js';
 import { METRICAS } from '../js/avaliacao.js';
+import { consentimentoValido, VERSAO_PRIVACIDADE } from '../js/privacidade.js';
+import { atenderPrivacidade, expirarDados } from './privacidade.js';
 
 const ORIGENS = new Set(['https://stresstest.smellsliketech.com.br', 'http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:8787', 'http://127.0.0.1:8787']);
 const LIMITE = 1500000;
 const json = (dados, status = 200) => Response.json(dados, { status, headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'", 'Referrer-Policy': 'no-referrer' } });
-const recentes = `r.elegivel = 1 AND NOT EXISTS (SELECT 1 FROM resultados n WHERE n.grupo = r.grupo AND n.contribuinte = r.contribuinte AND n.elegivel = 1 AND (n.criado > r.criado OR (n.criado = r.criado AND n.benchmark_id > r.benchmark_id)))`;
+const autorizado = (alias) => `EXISTS (SELECT 1 FROM benchmarks b WHERE b.id = ${alias}.benchmark_id AND b.consentimento_versao IS NOT NULL)`;
+const recentes = `r.elegivel = 1 AND ${autorizado('r')} AND NOT EXISTS (SELECT 1 FROM resultados n WHERE n.grupo = r.grupo AND n.contribuinte = r.contribuinte AND n.elegivel = 1 AND ${autorizado('n')} AND (n.criado > r.criado OR (n.criado = r.criado AND n.benchmark_id > r.benchmark_id)))`;
 const medidas = (id) => METRICAS[id].filter((m) => m.tipo === 'media');
 const colunasMedias = (id) => medidas(id).map((m) => `AVG(json_extract(r.resumo, '$.${m.chave}.media')) m_${m.chave}, COUNT(json_extract(r.resumo, '$.${m.chave}.media')) n_${m.chave}`).join(', ');
 const mediasPublicas = (id, r) => Object.fromEntries(medidas(id).map((m) => [m.chave, { media: r[`m_${m.chave}`] ?? null, n: r[`n_${m.chave}`] || 0 }]));
@@ -39,9 +42,17 @@ export async function api(req, env) {
       const { success } = await env.ENVIOS.limit({ key: req.headers.get('cf-connecting-ip') || 'local' });
       if (!success) return json({ erro: 'Muitos envios. Aguarde um minuto e tente novamente.' }, 429);
     }
+    if (['/api/privacidade/exportar', '/api/privacidade/excluir'].includes(url.pathname)) {
+      let entrada; try { entrada = await corpo(req); } catch (e) { return json({ erro: e.message }, 400); }
+      return atenderPrivacidade(url.pathname, entrada, env, hash, json);
+    }
     if (!['/api/benchmarks', '/api/comparar'].includes(url.pathname)) return json({ erro: 'Rota não encontrada.' }, 404);
     let dados;
-    try { dados = validarBenchmark(await corpo(req)); } catch (e) { return json({ erro: e.message }, 400); }
+    try {
+      const entrada = await corpo(req);
+      if (url.pathname === '/api/benchmarks' && !consentimentoValido(entrada.consentimento)) throw new Error('Autorize a publicação após ler a política de privacidade atual. Atualize o site ou aplicativo.');
+      dados = validarBenchmark(entrada);
+    } catch (e) { return json({ erro: e.message }, 400); }
     const contribuinte = await hash(dados.contribuinte);
     // O identificador aleatório é transformado em hash e nunca é público.
     delete dados.contribuinte;
@@ -59,18 +70,23 @@ export async function api(req, env) {
       return json({ comparacoes, salvo: false });
     }
     const existente = await env.DB.prepare('SELECT contribuinte FROM benchmarks WHERE id = ?').bind(dados.id).first();
+    if (await env.DB.prepare('SELECT contribuinte FROM revogacoes WHERE contribuinte = ?').bind(contribuinte).first()) return json({ erro: 'Chave revogada. Recarregue a página antes de uma nova contribuição.' }, 409);
     if (existente && existente.contribuinte !== contribuinte) return json({ erro: 'Identificador já utilizado.' }, 409);
     if (!existente) {
-      const comandos = [env.DB.prepare('INSERT INTO benchmarks(id, contribuinte, dados) VALUES (?, ?, ?)').bind(dados.id, contribuinte, JSON.stringify(dados))];
+      const comandos = [env.DB.prepare("INSERT INTO benchmarks(id, contribuinte, dados, consentimento_versao, consentido_em) VALUES (?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))").bind(dados.id, contribuinte, JSON.stringify(dados), VERSAO_PRIVACIDADE)];
       for (const id of dados.ids) {
         const c = dados.componentes[id]; const h = c.hardware;
         comandos.push(env.DB.prepare('INSERT INTO resultados(benchmark_id, contribuinte, componente, grupo, tipo, marca, modelo, frequencia, hardware, configuracao, pontuacao, resumo, elegivel) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
           .bind(dados.id, contribuinte, id, grupos[id], h.tipo, h.marca, h.modelo, h.frequencia, JSON.stringify(h), JSON.stringify(c.configuracao), c.pontuacao, JSON.stringify(c.resumo), c.elegivel ? 1 : 0));
       }
       try { await env.DB.batch(comandos); } catch (e) {
+        if (await env.DB.prepare('SELECT contribuinte FROM revogacoes WHERE contribuinte = ?').bind(contribuinte).first()) return json({ erro: 'Chave revogada. Recarregue a página antes de uma nova contribuição.' }, 409);
         const repetido = await env.DB.prepare('SELECT contribuinte FROM benchmarks WHERE id = ?').bind(dados.id).first();
         if (repetido?.contribuinte !== contribuinte) throw e;
       }
+    } else {
+      // Reenvio explícito da mesma pessoa pode renovar a autorização de um registro legado.
+      await env.DB.batch([env.DB.prepare("UPDATE benchmarks SET consentimento_versao = ?, consentido_em = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ? AND contribuinte = ? AND consentimento_versao IS NULL").bind(VERSAO_PRIVACIDADE, dados.id, contribuinte)]);
     }
     return json({ id: dados.id, salvo: true, comparacoes }, existente ? 200 : 201);
   }
@@ -88,12 +104,13 @@ export async function api(req, env) {
   }
   const detalhe = url.pathname.match(/^\/api\/benchmarks\/([a-f0-9-]{36})$/i);
   if (detalhe) {
-    const r = await env.DB.prepare('SELECT dados, criado FROM benchmarks WHERE id = ?').bind(detalhe[1]).first();
+    const r = await env.DB.prepare('SELECT dados, criado FROM benchmarks WHERE id = ? AND consentimento_versao IS NOT NULL').bind(detalhe[1]).first();
     return r ? json({ ...JSON.parse(r.dados), criado: r.criado }) : json({ erro: 'Benchmark não encontrado.' }, 404);
   }
   return json({ erro: 'Rota não encontrada.' }, 404);
 }
 export default {
+  async scheduled(_evento, env) { await expirarDados(env); },
   async fetch(req, env) {
     if (!new URL(req.url).pathname.startsWith('/api/')) return env.ASSETS.fetch(req);
     try { return await api(req, env); } catch { return json({ erro: 'Não foi possível acessar o banco. Tente novamente em instantes.' }, 503); }

@@ -8,7 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>SLTStressTest.Plugin</RootNamespace>
     <AssemblyName>SLTStressTestPlugin</AssemblyName>
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
     <Product>SLT Stress Test Plugin</Product>
     <Company>Smells Like Tech</Company>
     <Copyright>© 2026 Smells Like Tech</Copyright>
@@ -35,5 +35,6 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Assets\icone.ico" LogicalName="icone.ico" />
+    <EmbeddedResource Include="Terceiros\PawnIO\*" LogicalName="PawnIO.%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

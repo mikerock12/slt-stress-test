@@ -148,7 +148,35 @@ links. Nenhum código delas foi copiado.
 
 ## Em andamento
 
-- (vazio)
+- Codex, branch `codex/corrige-download-apk`: investigar download que chega a 100% sem
+  concluir no POCO X7 PRO; conferir transferência/assinatura e corrigir distribuição se
+  necessário. Dono de js/android.js, index.html, build, cabeçalhos e documentação nesta tarefa.
+  Imagens confirmam Chrome/aba de download GitHub com 1,86/1,86 MB; causa no aparelho ainda
+  não reproduzida. APK remoto idêntico ao local e assinatura v2 válida. Preparado espelho
+  estático no domínio oficial, sem redirecionamento; build valida SHA-256. Suíte revelou
+  expectativa aleatória de data/UUID em tests/api.test.mjs; fixture agora tem data explícita.
+  Próximas tarefas autorizadas: incluir PawnIO no exe (substitui a regra anterior de não
+  distribuir), verificar licença/fonte e instalação automática; revisar LGPD, política e controles.
+  Implementados: driver x64 2.2.0 oficial SYS/INF/CAT (assinatura Microsoft válida), fontes
+  completos com PawnPP, GPL/aviso e instalação PnP após aceitação, sem incluir o instalador
+  de licença não declarada. Exe compilado; --verificar-pacote retornou 0, sem instalar.
+  Política com controlador informado pelo dono, consentimento versionado, exportação/exclusão
+  por chave, revogação e retenção diária de 12 meses; migração 0002. Suíte 44/44.
+  Chrome/Firefox: CPU, GPU, memória, disco e MAX STRESS 2 min concluídos com relatórios,
+  JSON e impressão, sem erros JS. Download direto local concluiu no Chrome com UA POCO,
+  SHA-256 idêntico à release; ainda sem confirmação no aparelho físico do dono.
+  D1 de produção tem 3 testes legados; não inventar consentimento para eles: passam a ficar
+  fora da consulta pública até nova autorização, mantendo exportação/exclusão pelo dono.
+  APK release 1.2.0 instalado e processo aberto no emulador 16; houve ANR da System UI do
+  emulador, dispensado com Esperar. A carga completa Android já tinha sido conferida no PR #6.
+  Dono autorizou expressamente a aceitação da GPL/exceção e instalação do driver neste PC
+  para validar em 23/10/2026. UAC foi cancelado (também na nova verificação local do pacote);
+  não repetir/contornar a recusa. Serviço PawnIO já estava ativo, conforme sc.exe query;
+  não atribuir essa instalação ao teste novo. Rotina PnP ainda não validada ponta a ponta.
+  PR #7 aberto; CI do primeiro commit passou nos três jobs, incluindo integridade do pacote.
+  Última conferência incluiu index.html e contexto.md que ainda estavam fora do commit;
+  enviar o complemento e aguardar CI do novo commit antes de integrar.
+  APK exclui downloads dos assets embarcados.
 
 ## Conferência em aparelho físico pendente
 
