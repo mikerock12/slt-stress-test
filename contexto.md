@@ -36,6 +36,9 @@ links. Nenhum código delas foi copiado.
 
 ## Estado atual
 
+- 23/10/2026 — Apresentação pública do GitHub atualizada: README com plataformas, downloads
+  da release, métodos nativos, ranking, limites e comandos atuais; seção Sobre com descrição,
+  link do site e tópicos. Conferidos os dados remotos e os links para documentação local.
 - 23/10/2026 — **Android e ranking no ar**: PR [#6](https://github.com/mikerock12/slt-stress-test/pull/6),
   merge `ac241d5`, CI verde de site/API, Android e plugin. Release
   [v1.1.0](https://github.com/mikerock12/slt-stress-test/releases/tag/v1.1.0) com APK universal
@@ -157,6 +160,8 @@ links. Nenhum código delas foi copiado.
 
 ## Histórico
 
+- 23/10/2026 — README e seção Sobre do GitHub atualizados para refletir a entrega Android e
+  ranking, com descrição em português, downloads e tópicos; alteração somente documental.
 - 23/10/2026 — Backup privado da chave e senha Android concluído por autorização expressa
   do dono, em `2026-10-23/privado/assinatura-android/` na pasta de backup do Drive.
   Cópias conferidas por hash, sem exibir segredos; material permanece fora do Git e da release.

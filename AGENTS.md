@@ -118,6 +118,8 @@ MAX STRESS de 2 min, conferir o relatório, a impressão em PDF e o JSON exporta
 ## Última entrega (23/10/2026)
 
 PR #6 integrado na main, CI verde de site/API, Android e plugin. Release v1.1.0 e produção publicadas.
+README e seção Sobre do GitHub atualizados com APK Android, plugin Windows e ranking;
+downloads, requisitos, métodos nativos e comandos de desenvolvimento documentados.
 Estado e verificações em contexto.md. Leituras indisponíveis no Android continuam explícitas;
 nunca tratar temperatura da bateria como temperatura de CPU/GPU.
 
