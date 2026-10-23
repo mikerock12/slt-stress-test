@@ -65,6 +65,10 @@ artefato, nunca a chave de distribuição. `publicar-android.ps1` cria chave e s
 `.local/assinatura-android/` (ignorada pelo Git) e gera `.local/release/SLTStressTest.apk`.
 Preservar essa pasta privada em backup para futuras atualizações do mesmo aplicativo.
 
+A biblioteca C++ usa alinhamento ELF de 16 KB (LOAD e RELRO), compatível também com
+dispositivos de 4 KB. Validar o APK com `zipalign -c -P 16 4` e os segmentos das quatro ABIs.
+Isso não comprova a execução em todos os aparelhos; sensores e root ainda exigem teste físico.
+
 Release do GitHub `v1.2.0`, asset `SLTStressTest.apk` e `SHA256SUMS.txt`. A mesma release deve
 ter `SLTStressTestPlugin.exe`, pois o download Windows usa `releases/latest/download/`.
 
