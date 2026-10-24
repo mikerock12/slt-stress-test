@@ -2,7 +2,7 @@
 import { METRICAS, NOMES, avaliar, resumirComponente, vereditoGeral } from './avaliacao.js';
 import { formatarDuracao, formatarNumero } from './metricas.js';
 import { graficoRelatorio } from './graficos.js';
-import { DOWNLOAD } from './plugin.js';
+import { DOWNLOAD, descricaoMemoria } from './plugin.js';
 import { integrarComparacao } from './ranking.js';
 
 const ESTADOS_DISCO = { bom: 'Bom', cuidado: 'Cuidado', ruim: 'Ruim' };
@@ -277,7 +277,7 @@ export function gerarRelatorio(container, dados) {
         <dl class="lista-sistema">
           <div><dt>Processador</dt><dd>${esc(s.threads ? `${s.threads} threads` : '—')}</dd></div>
           <div><dt>GPU</dt><dd>${esc(s.gpu || '—')}</dd></div>
-          <div><dt>Memória (navegador)</dt><dd>${esc(s.memoriaGB ? (s.memoriaGB >= 8 ? '8 GB ou mais' : `~${s.memoriaGB} GB`) : '—')}</dd></div>
+          <div><dt>Memória RAM</dt><dd>${esc(descricaoMemoria({ plugin: dados.inventario, android: dados.android }))}</dd></div>
           <div><dt>Sistema</dt><dd>${esc(`${s.so || ''} · ${s.navegador || ''}`)}</dd></div>
           ${s.bateria ? `<div><dt>Energia</dt><dd>${s.bateria.carregando ? 'na tomada' : 'na bateria'}</dd></div>` : ''}
         </dl>

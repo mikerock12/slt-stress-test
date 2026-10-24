@@ -122,6 +122,12 @@ MAX STRESS de 2 min, conferir o relatório, a impressão em PDF e o JSON exporta
   a zona smellsliketech.com.br usa nameservers do Cloudflare, então o Registro.br não muda.
 - Repositório público no GitHub; backup em `G:/Meu Drive/Backups/Smells Like Tech - Stress Test/`.
 
+## Correção em andamento (24/10/2026)
+
+Detecção do plugin após instalação e RAM real: branch `codex/corrigir-plugin-memoria`.
+Arquivos e progresso em `contexto.md` → Em andamento. Não instalar/reconfigurar PawnIO;
+o plugin 1.2.0 já entrega capacidade e tipo dos módulos pelo contrato existente.
+
 ## Última entrega (24/10/2026)
 
 PRs #9 e #10 integrados com CI verde. Release v1.3.0 publicada: APK 1.3.0/code 4,

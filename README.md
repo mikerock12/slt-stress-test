@@ -41,6 +41,13 @@ throttling) e veredito por componente, exportável em PDF e JSON.
 
 O navegador não expõe temperatura, clock real da GPU, frequência da RAM nem SMART.
 O plugin Windows e o APK ampliam a coleta conforme o sistema e o fabricante permitem.
+No Windows, “Já abri o plugin: verificar” inicia uma tentativa nova sem reiniciar o
+navegador; o site também retoma a procura ao voltar à aba após instalar/abrir o plugin.
+A primeira consulta pode levar até 60 s por causa da permissão e do inventário WMI.
+O painel e o relatório exibem a soma dos módulos físicos, tipo DDR e frequência quando
+informados pelo Windows, por exemplo “32 GB DDR4 · 3200 MT/s (2 pentes)”. Sem leitura
+nativa, capacidade e tipo aparecem como não identificados; `deviceMemory` não substitui
+essa informação. Não precisa baixar novamente o plugin 1.2.0.
 No Android, o modo avançado opcional consulta sensores por um comando fixo de somente
 leitura em aparelhos que já tenham root. Leituras ausentes aparecem como “não disponível”;
 estimativas são identificadas, e a temperatura da bateria nunca é apresentada como CPU/GPU.
