@@ -17,6 +17,7 @@ public final class MainActivity extends Activity {
     static final String ORIGEM = "https://stresstest.smellsliketech.com.br";
     private WebView web;
     private PonteAndroid ponte;
+    private boolean renderizadorAtivo = true;
 
     static boolean autorizado(Uri uri) {
         return "https".equals(uri.getScheme()) && "stresstest.smellsliketech.com.br".equals(uri.getHost()) && (uri.getPort() == -1 || uri.getPort() == 443);
@@ -44,6 +45,16 @@ public final class MainActivity extends Activity {
         avancado.setOnClickListener(v -> new AlertDialog.Builder(this).setTitle("Leitura avançada opcional").setMessage("Se seu aparelho já tem root, o app pode ler sensores e informações de controladores em sysfs. O gerenciador de root pedirá sua autorização. Somente leitura: não instala root, não altera arquivos e não lê números de série. Sem root, os testes nativos continuam disponíveis.").setPositiveButton("Ativar leitura",(d,w)->{ponte.leituraAvancada(true);avancado.setText("Sensores avançados: ativados");}).setNeutralButton("Desativar",(d,w)->{ponte.leituraAvancada(false);avancado.setText("Sensores avançados (root opcional)");}).setNegativeButton("Cancelar",null).show());
         web.addJavascriptInterface(ponte, "SLTAndroid");
         web.setWebViewClient(new WebViewClient() {
+            @Override public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detalhe) {
+                renderizadorAtivo = false;
+                ponte.suspender();
+                ((android.view.ViewGroup)view.getParent()).removeView(view);
+                view.destroy(); web = null;
+                new AlertDialog.Builder(MainActivity.this).setTitle("Teste interrompido")
+                    .setMessage("O Android encerrou o motor da página. As cargas nativas receberam a parada. Aguarde o aparelho esfriar; atualize Android System WebView se o problema persistir.")
+                    .setPositiveButton("Reabrir",(d,w)->recreate()).setNegativeButton("Fechar",(d,w)->finish()).setCancelable(false).show();
+                return true;
+            }
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest req) {
                 if (autorizado(req.getUrl())) return false;
                 if (req.isForMainFrame() && "mailto".equals(req.getUrl().getScheme()) && "contato@smellsliketech.com.br".equals(req.getUrl().getSchemeSpecificPart())) {
@@ -81,6 +92,9 @@ public final class MainActivity extends Activity {
         web.loadUrl(ORIGEM);
     }
     void imprimir() { runOnUiThread(() -> ((PrintManager)getSystemService(PRINT_SERVICE)).print("SLT Stress Test", web.createPrintDocumentAdapter("Benchmark SLT"), new PrintAttributes.Builder().build())); }
+    void notificarParada(String motivo) {
+        runOnUiThread(() -> { if(web!=null && renderizadorAtivo) web.evaluateJavascript("window.dispatchEvent(new CustomEvent('slt:parada-nativa',{detail:"+org.json.JSONObject.quote(motivo)+"}))",null); });
+    }
     void exportar(String conteudo) {
         runOnUiThread(() -> {
             try {

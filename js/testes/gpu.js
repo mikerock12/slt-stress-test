@@ -73,8 +73,9 @@ export class TesteGPU {
 
     this.aoPerder = (e) => {
       e.preventDefault();
-      this.falhaFatal = 'O contexto WebGL foi perdido: o driver de vídeo reiniciou ou travou durante o teste. Em GPU estável isso não acontece.';
-      aoEvento({ tipo: 'erro', msg: 'GPU: contexto WebGL perdido (driver reiniciou).' });
+      if (!this.rodando) return;
+      this.falhaFatal = 'O contexto WebGL foi perdido. Pode haver limite de recursos, memória ou falha do driver; o teste foi interrompido.';
+      aoEvento({ tipo: 'erro', msg: 'GPU: contexto WebGL perdido; encerrando a carga.' });
     };
     canvas.addEventListener('webglcontextlost', this.aoPerder);
 
@@ -110,13 +111,13 @@ export class TesteGPU {
     this.fbo = this.criarAlvo(this.largura, this.altura);
     this.fboRef = this.criarAlvo(REF_TAM, REF_TAM);
 
-    this.referencia = this.lerReferencia();
-    this.proximaRef = performance.now() + 15000;
+    this.prazoMs = opcoes.prazoMs ?? Infinity;
+    this.proximaRef = 0;
     this.rodando = true;
     this.inicio = performance.now();
     this.janela = { passadas: 0, t0: performance.now(), quadros: 0, ultimoQuadro: performance.now() };
     this.quadro = this.quadro.bind(this);
-    requestAnimationFrame(this.quadro);
+    this.raf = requestAnimationFrame(this.quadro);
     aoEvento({ tipo: 'log', msg: `GPU: ${this.renderer} — ${this.largura}×${this.altura}, ${this.passos} passos de raymarching.` });
   }
 
@@ -128,6 +129,7 @@ export class TesteGPU {
     const fb = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+    if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) throw new Error('A GPU não conseguiu criar o alvo de renderização. Reduza a resolução.');
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     return { fb, tex, w, h };
   }
@@ -150,17 +152,25 @@ export class TesteGPU {
     gl.disable(gl.SCISSOR_TEST);
   }
 
-  // Quadro congelado em t = 1,234 s, lido de volta para comparação.
-  lerReferencia() {
+  // Leitura assíncrona: não força a página a esperar a GPU terminar.
+  iniciarReferencia() {
     const gl = this.gl;
     this.desenhar(this.fboRef, 1.234);
-    const px = new Uint8Array(REF_TAM * REF_TAM * 4);
-    gl.readPixels(0, 0, REF_TAM, REF_TAM, gl.RGBA, gl.UNSIGNED_BYTE, px);
-    return px;
+    this.pbo ||= gl.createBuffer();
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this.pbo);
+    gl.bufferData(gl.PIXEL_PACK_BUFFER, REF_TAM * REF_TAM * 4, gl.STREAM_READ);
+    gl.readPixels(0, 0, REF_TAM, REF_TAM, gl.RGBA, gl.UNSIGNED_BYTE, 0);
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+    this.selar('referencia', 0);
   }
 
   conferirReferencia() {
-    const atual = this.lerReferencia();
+    const gl = this.gl;
+    const atual = new Uint8Array(REF_TAM * REF_TAM * 4);
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this.pbo);
+    gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, atual);
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+    if (!this.referencia) { this.referencia = atual; return; }
     let ruins = 0;
     for (let i = 0; i < atual.length; i++) if (Math.abs(atual[i] - this.referencia[i]) > 8) ruins++;
     if (ruins) {
@@ -169,17 +179,41 @@ export class TesteGPU {
     }
   }
 
+  selar(tipo, passadas) {
+    const gl = this.gl;
+    const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+    if (!sync) throw new Error('Não foi possível acompanhar a conclusão do quadro da GPU.');
+    this.pendente = { sync, tipo, passadas, t0: performance.now() };
+    gl.flush();
+  }
+
   quadro(agora) {
     if (!this.rodando || this.falhaFatal) return;
     const gl = this.gl;
-    const intervalo = agora - this.janela.ultimoQuadro;
-    this.janela.ultimoQuadro = agora;
-
-    // Ajuste das passadas: se o quadro saiu no ritmo do monitor, a GPU ainda tem folga.
-    if (!document.hidden && this.janela.quadros > 2) {
-      if (intervalo < 20 && this.passadas < 64) this.passadas++;
-      else if (intervalo > 45 && this.passadas > 1) this.passadas--;
+    if (agora >= this.prazoMs) { this.parar(); return; }
+    this.raf = requestAnimationFrame(this.quadro);
+    try {
+    // No máximo um lote em voo. timeout=0 só consulta; nunca espera na thread da página.
+    if (this.pendente) {
+      const p = this.pendente;
+      const estado = gl.clientWaitSync(p.sync, 0, 0);
+      if (estado === gl.TIMEOUT_EXPIRED) {
+        if (agora - p.t0 > 5000) throw new Error('A GPU não confirmou um quadro em 5 segundos. Reduza a carga e aguarde o aparelho esfriar.');
+        return;
+      }
+      if (estado === gl.WAIT_FAILED) throw new Error('Falha ao acompanhar a conclusão do quadro da GPU.');
+      gl.deleteSync(p.sync); this.pendente = null;
+      if (p.tipo === 'referencia') { this.conferirReferencia(); this.proximaRef = agora + 15000; }
+      else {
+        this.janela.passadas += p.passadas;
+        this.janela.quadros++;
+        const intervalo = agora - p.t0;
+        if (intervalo < 20 && this.passadas < 64) this.passadas++;
+        else if (intervalo > 45 && this.passadas > 1) this.passadas--;
+      }
     }
+    if (document.hidden) return;
+    if (agora >= this.proximaRef) { this.iniciarReferencia(); return; }
 
     const t = (agora - this.inicio) / 1000;
     for (let i = 0; i < this.passadas; i++) this.desenhar(this.fbo, t + i * 0.001);
@@ -191,17 +225,12 @@ export class TesteGPU {
     gl.blitFramebuffer(0, 0, this.fbo.w, this.fbo.h, 0, 0, w, h, gl.COLOR_BUFFER_BIT, gl.LINEAR);
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
 
-    this.janela.passadas += this.passadas;
-    this.janela.quadros++;
-    if (intervalo > 1000 && this.passadas === 1 && !this.avisouLento && !document.hidden && this.janela.quadros > 3) {
-      this.avisouLento = true;
-      this.aoEvento({ tipo: 'log', msg: 'GPU: mais de 1 s por quadro. Para uma GPU integrada ou modesta, prefira 720p ou intensidade leve.' });
+    this.selar('cena', this.passadas);
+    } catch (e) {
+      this.falhaFatal = e.message;
+      this.aoEvento({ tipo: 'erro', msg: `GPU: ${e.message}` });
+      this.parar();
     }
-    if (agora >= this.proximaRef) {
-      this.conferirReferencia();
-      this.proximaRef = agora + 15000;
-    }
-    requestAnimationFrame(this.quadro);
   }
 
   amostra() {
@@ -224,12 +253,15 @@ export class TesteGPU {
   }
 
   info() {
-    return { renderer: this.renderer, resolucao: `${this.largura}×${this.altura}`, passos: this.passos, falhaFatal: this.falhaFatal };
+    return { renderer: this.renderer, resolucao: `${this.largura}×${this.altura}`, passos: this.passos, motor: 'webgl2-fence-v2', falhaFatal: this.falhaFatal };
   }
 
   async parar() {
     this.rodando = false;
+    cancelAnimationFrame(this.raf);
     this.canvas?.removeEventListener('webglcontextlost', this.aoPerder);
+    if (this.gl && this.pendente) this.gl.deleteSync(this.pendente.sync);
+    this.pendente = null;
     const perda = this.gl?.getExtension('WEBGL_lose_context');
     perda?.loseContext();
     this.gl = null;

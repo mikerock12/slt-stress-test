@@ -24,6 +24,7 @@ export class TesteDisco {
         mib = novo;
       }
     } catch { /* estimate indisponível */ }
+    if (this.parado) return;
     this.mib = mib;
 
     this.worker = new Worker(new URL('../workers/disco.worker.js', import.meta.url), { type: 'module' });
@@ -55,6 +56,7 @@ export class TesteDisco {
   }
 
   async parar() {
+    this.parado = true;
     if (!this.worker) return;
     // Espera o worker apagar o arquivo temporário (até 5 s) antes de encerrar.
     await new Promise((ok) => {

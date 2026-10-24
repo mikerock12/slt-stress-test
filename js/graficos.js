@@ -58,7 +58,7 @@ export function graficoRelatorio(canvas, valores, { unidade = '', casas = 1, dur
   let max = Math.max(...dados);
   if (max === min) { max += Math.abs(max) * 0.05 || 1; min -= Math.abs(min) * 0.05 || 1; }
   const folga = (max - min) * 0.1;
-  min -= folga; max += folga;
+  min = Math.max(0, min - folga); max += folga;
   const x = (i) => esq + (i / (dados.length - 1)) * (dir - esq);
   const y = (v) => base - ((v - min) / (max - min)) * (base - topo);
 

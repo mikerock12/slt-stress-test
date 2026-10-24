@@ -42,7 +42,7 @@ final class ColetaHardware {
         String gpuFonte = "/sys/class/kgsl/kgsl-3d0/max_gpuclk";
         JSONObject disco = obj("tipo", "Flash", "modelo", null, "marca", null, "capacidadeGB", new StatFs(ctx.getFilesDir().getPath()).getTotalBytes()/1e9,
             "observacao", "Capacidade do sistema de arquivos de dados; modelo físico não exposto de forma confiável. Não inferimos UFS/eMMC pelo desempenho.");
-        return obj("protocolo", 1, "versao", "1.0.0", "marca", Build.MANUFACTURER, "modelo", Build.MODEL, "produto", Build.PRODUCT,
+        return obj("protocolo", 1, "versao", BuildConfig.VERSION_NAME, "marca", Build.MANUFACTURER, "modelo", Build.MODEL, "produto", Build.PRODUCT,
             "android", Build.VERSION.RELEASE, "api", Build.VERSION.SDK_INT, "emulado", emulado(), "abis", new JSONArray(Arrays.asList(Build.SUPPORTED_ABIS)),
             "cpu", obj("marca", fabricante, "modelo", soc, "frequenciaMHz", max > 0 ? max : null, "nucleos", nucleos, "fonte", "Build.SOC_MODEL / proc cpuinfo / cpufreq"),
             "gpu", obj("frequenciaMaxMHz", num(gpuFonte, 1e6), "fonte", gpuFonte, "modelo", "Renderer WebGL2 informado no relatório"),
@@ -56,23 +56,26 @@ final class ColetaHardware {
     }
     JSONObject sensores() {
         JSONArray zonas = new JSONArray(); Double cpu = null, gpu = null;
-        File[] dirs = new File("/sys/class/thermal").listFiles((d, nome) -> nome.startsWith("thermal_zone"));
-        if (dirs != null) for (File d : dirs) {
-            String tipo = ler(d + "/type"); Double t = num(d + "/temp", 1000);
-            if (tipo != null && t != null && t < 150) {
-                zonas.put(obj("sensor", tipo, "tempC", t, "fonte", d + "/temp"));
-                if (tipo.toLowerCase(Locale.ROOT).contains("cpu")) cpu = cpu == null ? t : Math.max(cpu, t);
-                if (tipo.toLowerCase(Locale.ROOT).contains("gpu")) gpu = gpu == null ? t : Math.max(gpu, t);
-            }
+        JSONObject fontes = obj();
+        for (String[] z : fontesTermicas()) {
+            String tipo = ler(z[0]); Double t = SensoresTermicos.miligraus(ler(z[1]));
+            if (tipo == null || t == null) continue;
+            String componente = SensoresTermicos.componente(tipo);
+            zonas.put(obj("sensor", tipo, "tempC", t, "fonte", z[1], "componente", componente));
+            if ("cpu".equals(componente) && (cpu == null || t > cpu)) { cpu = t; try { fontes.put("cpuTempC", tipo + " · " + z[1]); } catch (JSONException ignored) {} }
+            if ("gpu".equals(componente) && (gpu == null || t > gpu)) { gpu = t; try { fontes.put("gpuTempC", tipo + " · " + z[1]); } catch (JSONException ignored) {} }
         }
         String apiTemp = "Sem acesso: API exige proprietário do dispositivo/serviço autorizado.";
         try {
             HardwarePropertiesManager hp = (HardwarePropertiesManager)ctx.getSystemService(Context.HARDWARE_PROPERTIES_SERVICE);
             float[] c = hp.getDeviceTemperatures(HardwarePropertiesManager.DEVICE_TEMPERATURE_CPU, HardwarePropertiesManager.TEMPERATURE_CURRENT);
-            float[] g = hp.getDeviceTemperatures(HardwarePropertiesManager.DEVICE_TEMPERATURE_GPU, HardwarePropertiesManager.TEMPERATURE_CURRENT);
-            for (float t : c) if (t > 0 && t < 150) cpu = cpu == null ? (double)t : Math.max(cpu, t);
-            for (float t : g) if (t > 0 && t < 150) gpu = gpu == null ? (double)t : Math.max(gpu, t);
+            for (float t : c) if (t > 0 && t < 150 && (cpu == null || t > cpu)) { cpu = (double)t; fontes.put("cpuTempC", "HardwarePropertiesManager / CPU"); }
             apiTemp = "HardwarePropertiesManager acessível";
+        } catch (Exception ignored) { }
+        try {
+            HardwarePropertiesManager hp = (HardwarePropertiesManager)ctx.getSystemService(Context.HARDWARE_PROPERTIES_SERVICE);
+            float[] g = hp.getDeviceTemperatures(HardwarePropertiesManager.DEVICE_TEMPERATURE_GPU, HardwarePropertiesManager.TEMPERATURE_CURRENT);
+            for (float t : g) if (t > 0 && t < 150 && (gpu == null || t > gpu)) { gpu = (double)t; fontes.put("gpuTempC", "HardwarePropertiesManager / GPU"); }
         } catch (Exception ignored) { }
         JSONArray clocks = new JSONArray(); double soma = 0; int lidos = 0;
         for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
@@ -88,14 +91,49 @@ final class ColetaHardware {
         long corrente = bm.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
         PowerManager pm = (PowerManager)ctx.getSystemService(Context.POWER_SERVICE);
         int status = Build.VERSION.SDK_INT >= 29 ? pm.getCurrentThermalStatus() : -1;
+        if (Build.VERSION.SDK_INT >= 30 && SystemClock.elapsedRealtime() - ultimoIndice >= 10000) {
+            ultimoIndice = SystemClock.elapsedRealtime();
+            try { float v = pm.getThermalHeadroom(0); indiceTermico = Float.isFinite(v) && v >= 0 ? (double)v : null; }
+            catch (Exception ignored) { indiceTermico = null; }
+        }
         return obj("cpuTempC", cpu, "gpuTempC", gpu, "cpuClockMHz", lidos > 0 ? soma/lidos : null,
             "gpuClockMHz", num("/sys/class/kgsl/kgsl-3d0/gpuclk", 1e6), "clocksPorNucleo", clocks, "zonasTermicas", zonas, "devfreq", devfreq,
-            "apiTemperatura", apiTemp, "ausencias", obj("cpuClockMHz", emulado() ? "Não disponível: emulador não expõe o clock real da CPU física." : null,
-                "cpuTempC", cpu == null ? "Não disponível: fabricante não permite ler sensor identificado como CPU." : null,
-                "gpuTempC", gpu == null ? "Não disponível: fabricante não permite ler sensor identificado como GPU." : null),
+            "fontes", fontes, "apiTemperatura", apiTemp, "ausencias", obj("cpuClockMHz", emulado() ? "Não disponível: emulador não expõe o clock real da CPU física." : null,
+                "cpuTempC", cpu == null ? "Não disponível: nenhuma fonte legível identificada como CPU em thermal/sysfs/hwmon; a API Android exige acesso privilegiado. Pode variar entre modelos, mesmo sem root." : null,
+                "gpuTempC", gpu == null ? "Não disponível: nenhuma fonte legível identificada como GPU em thermal/sysfs/hwmon; a API Android exige acesso privilegiado. Pode variar entre modelos, mesmo sem root." : null),
             "bateria", obj("tempC", tempB, "nivel", b == null ? null : b.getIntExtra(BatteryManager.EXTRA_LEVEL, -1),
                 "tensaoMV", b == null ? null : b.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1),
                 "correnteUA", corrente == Long.MIN_VALUE ? null : corrente, "fonte", "BatteryManager; corrente da bateria, não potência da CPU"),
+            "indiceTermico", indiceTermico, "indiceTermicoFonte", "PowerManager.getThermalHeadroom(0), consultado a cada 10 s; 1 indica limite de estado grave, não graus Celsius",
             "estadoTermico", status, "estadoTermicoFonte", "PowerManager: -1 indisponível, 0 normal, 1 leve, 2 moderado, 3 grave, 4 crítico, 5 emergência, 6 desligamento");
+    }
+
+    private List<String[]> fontesCache;
+    private long ultimoIndice = -10000;
+    private Double indiceTermico;
+    private synchronized List<String[]> fontesTermicas() {
+        if (fontesCache != null) return fontesCache;
+        List<String[]> fontes = new ArrayList<>(); Set<String> vistas = new HashSet<>();
+        // Alguns kernels permitem ler o arquivo, mas negam listar o diretório.
+        for (String raiz : Arrays.asList("/sys/class/thermal", "/sys/devices/virtual/thermal")) {
+            for (int i = 0; i < 256; i++) {
+                File d = new File(raiz, "thermal_zone" + i);
+                String tipo = ler(d + "/type");
+                if (tipo == null) continue;
+                try { if (!vistas.add(d.getCanonicalPath())) continue; } catch (IOException ignored) { }
+                fontes.add(new String[] { d + "/type", d + "/temp" });
+            }
+        }
+        for (int h = 0; h < 32; h++) {
+            String d = "/sys/class/hwmon/hwmon" + h;
+            if (ler(d + "/name") == null) continue;
+            for (int i = 1; i <= 32; i++) {
+                String rotulo = d + "/temp" + i + "_label";
+                if (ler(rotulo) != null) fontes.add(new String[] { rotulo, d + "/temp" + i + "_input" });
+                else if (i == 1) fontes.add(new String[] { d + "/name", d + "/temp1_input" });
+            }
+        }
+        fontesCache = fontes;
+        return fontes;
     }
 }

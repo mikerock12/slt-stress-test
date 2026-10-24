@@ -16,7 +16,7 @@ export const METRICAS = {
     { chave: 'verificacoes', rotulo: 'Verificações feitas', unidade: '', casas: 0, tipo: 'contador',
       explica: 'Quantos resultados (primos de Mersenne e FFTs) foram conferidos.' },
     { chave: 'tempC', rotulo: 'Temperatura (sensor)', unidade: '°C', casas: 0, tipo: 'media', maiorMelhor: false, plugin: true,
-      explica: 'Temperatura real do processador lida pelo plugin. Até ~85 °C sob carga total é normal; perto de 95–100 °C a CPU reduz o clock para se proteger.' },
+      explica: 'Temperatura do processador lida pelo aplicativo ou plugin, com fonte identificada. Os limites térmicos variam por aparelho; não confundir com bateria ou carcaça.' },
     { chave: 'clockReal', rotulo: 'Clock real (sensor)', unidade: 'GHz', casas: 2, tipo: 'media', maiorMelhor: true, plugin: true,
       explica: 'Frequência média dos núcleos lida pelo plugin (ou pelo contador de desempenho do Windows).' },
     { chave: 'potenciaW', rotulo: 'Potência do pacote', unidade: 'W', casas: 0, tipo: 'media', maiorMelhor: false, plugin: true,
@@ -34,7 +34,7 @@ export const METRICAS = {
     { chave: 'artefatos', rotulo: 'Artefatos detectados', unidade: '', casas: 0, tipo: 'contador',
       explica: 'Quadros de referência que saíram diferentes do original. Indica erro de cálculo da GPU ou da VRAM.' },
     { chave: 'tempC', rotulo: 'Temperatura (sensor)', unidade: '°C', casas: 0, tipo: 'media', maiorMelhor: false, plugin: true,
-      explica: 'Temperatura do núcleo da GPU lida pelo plugin. Até ~83 °C sob carga é comum; acima de ~90 °C a placa reduz o clock.' },
+      explica: 'Temperatura da GPU lida pelo aplicativo ou plugin, com fonte identificada. Os limites variam por aparelho; bateria e carcaça são sensores separados.' },
     { chave: 'hotspotC', rotulo: 'Hot spot (sensor)', unidade: '°C', casas: 0, tipo: 'media', maiorMelhor: false, plugin: true,
       explica: 'Ponto mais quente do chip. Diferença muito grande para a temperatura do núcleo sugere pasta térmica ruim.' },
     { chave: 'clockMHz', rotulo: 'Clock real (sensor)', unidade: 'MHz', casas: 0, tipo: 'media', maiorMelhor: true, plugin: true,
@@ -141,8 +141,8 @@ export function avaliar(componente, resumo, extra = {}) {
     if (r.queda >= QUEDA_ATENCAO[componente]) {
       piora('atencao');
       const porque = {
-        cpu: 'Sinal clássico de thermal throttling: a CPU esquentou e reduziu o clock. Verifique pasta térmica, cooler e fluxo de ar.',
-        gpu: 'A GPU perdeu desempenho com o tempo, sinal de limite térmico ou de energia. Verifique ventoinhas, poeira e pasta térmica.',
+        cpu: extra.movel ? 'Pode haver limite térmico, de energia ou disputa por recursos. Sem sensor não é possível confirmar aquecimento. Pare, retire a capa, desconecte o carregador e aguarde esfriar antes de repetir.' : 'Pode haver limite térmico, de energia ou disputa por recursos. Confira as temperaturas e a refrigeração antes de repetir.',
+        gpu: extra.movel ? 'Pode haver limite térmico, de energia ou disputa por recursos. Pare e aguarde o aparelho esfriar. Sem sensor, a queda não confirma a temperatura.' : 'A GPU perdeu desempenho com o tempo, sinal de limite térmico, de energia ou disputa por recursos. Confira as temperaturas e a refrigeração.',
         memoria: 'A banda caiu bastante; pode ser outro programa disputando a memória ou throttling do controlador.',
         disco: 'A escrita caiu muito: comum quando o cache SLC do SSD se esgota ou quando o SSD esquenta.',
       };
@@ -169,7 +169,7 @@ export function avaliar(componente, resumo, extra = {}) {
     if (limites && temp.max >= limite) {
       piora('atencao');
       const porque = doUsuario ? `acima do limite de ${extra.limiteTemp} °C que você definiu` : limites[1];
-      motivos.push(`Temperatura chegou a ${temp.max.toFixed(0)} °C (média ${temp.media.toFixed(0)} °C): ${porque}. Verifique cooler, pasta térmica, poeira e fluxo de ar.`);
+      motivos.push(`Temperatura chegou a ${temp.max.toFixed(0)} °C (média ${temp.media.toFixed(0)} °C): ${porque}. ${extra.movel ? 'Pare o teste e aguarde o celular esfriar, fora do carregador.' : 'Verifique cooler, pasta térmica, poeira e fluxo de ar.'}`);
     } else if (limites) {
       motivos.push(`Temperatura sob controle: média ${temp.media.toFixed(0)} °C, máxima ${temp.max.toFixed(0)} °C.`);
     }
@@ -197,7 +197,7 @@ export function avaliar(componente, resumo, extra = {}) {
 
   if (extra.disparoTemp) {
     piora('atencao');
-    motivos.unshift(`O teste foi interrompido pela proteção de temperatura: ${NOMES[componente]} chegou a ${Math.round(extra.disparoTemp.temp)} °C, acima do limite de ${extra.disparoTemp.limite} °C. Melhore a refrigeração (cooler, pasta térmica, poeira, fluxo de ar) antes de repetir; os números deste teste valem só até a parada.`);
+    motivos.unshift(`O teste foi interrompido pela proteção de temperatura: ${NOMES[componente]} chegou a ${Math.round(extra.disparoTemp.temp)} °C, acima do limite de ${extra.disparoTemp.limite} °C. ${extra.movel ? 'Pare e aguarde o celular esfriar, fora do carregador.' : 'Confira a refrigeração antes de repetir.'} Os números deste teste valem só até a parada.`);
   }
 
   if (extra.saudeDisco === 'ruim') { piora('falha'); motivos.push('O SMART do disco testado indica falha. Faça backup imediatamente.'); }

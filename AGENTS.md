@@ -123,6 +123,11 @@ MAX STRESS de 2 min, conferir o relatório, a impressão em PDF e o JSON exporta
 
 ## Última entrega (23/10/2026)
 
+Em andamento em 24/10/2026: Codex, branch `codex/corrige-estabilidade-celulares`,
+investiga travamento ao encerrar no Galaxy A52, carga/proteção móvel no iPhone 11 e
+sensores Android/MediaTek no POCO X7 PRO. Escopo e verificações em contexto.md.
+Correções implementadas e APK 1.3.0 preparado; validações e entrega ainda em andamento.
+
 PRs #7 e #8 integrados, CI verde de site/API, Android e plugin. Release v1.2.1 publicada:
 APK Android 1.2.1 e plugin Windows 1.2.0 (mesmo binário aprovado no CI do PR #7).
 Download do APK pelo próprio domínio, sem redirecionamento, com hash validado no build;

@@ -1,6 +1,6 @@
 # Contexto do projeto — SLT Stress Test
 
-Atualizado em 23/10/2026, horário de Brasília (America/Sao_Paulo).
+Atualizado em 24/10/2026, horário de Brasília (America/Sao_Paulo).
 Cópia principal: `D:/PROJETOS/SLTStressTest`. Regras de trabalho em [AGENTS.md](AGENTS.md).
 
 ## Objetivo
@@ -185,7 +185,30 @@ links. Nenhum código delas foi copiado.
 
 ## Em andamento
 
-(vazio)
+- Codex, branch `codex/corrige-estabilidade-celulares`: corrigir encerramento travado
+  em 01:59 no Galaxy A52, responsividade e proteção de carga em celulares (iPhone 11
+  com queda de CPU/GPU nas imagens), e descoberta/identificação de sensores no POCO
+  X7 PRO. Dono nesta tarefa de js/app.js, módulos de carga/proteção/relatório, Android,
+  interface, testes e documentação. Sem outros agentes. Conferir bridge síncrona,
+  encerramento nativo, tempo limite independente e fontes térmicas antes de alterar.
+  Não inventar CPU/GPU a partir da bateria nem contornar permissões do fabricante.
+  Entrega autorizada: commit/push/PR/CI/merge, produção e backup de 24/10/2026;
+  autorização antiga de copiar chave/senha não se estende à nova pasta/data.
+  Implementado: encerramento sem espera bloqueante na bridge; prazo/ausência de pulso
+  vigiados nativamente; GPU com fence e referência assíncrona, um lote em voo; perfil
+  inicial móvel menor com opções completas; proteção por queda persistente; estado térmico,
+  bateria e fontes sem confundir CPU/GPU. Busca térmica/sysfs/hwmon ampliada. POCO e A52
+  informados pelo dono como sem root; permissões variam por fabricante, sem garantia de
+  sensor bloqueado. Versão preparada: APK 1.3.0/code 4, plugin permanece 1.2.0.
+  Até aqui: 50 testes JS/SQLite, cargas/guarda/classificação Java, build/lint Android e
+  assinatura/alinhamento 16 KB passaram. Chrome: cinco testes de 2 min, JSON/PDF/capturas.
+  Firefox em conferência; corrigida exportação JSON com âncora anexada ao documento.
+  Fixtures apenas locais: A52 quente dispara; POCO sem sensor mantém null; inicialização
+  sem pronto termina no prazo; queda de desempenho móvel interrompe com texto correto.
+  AVD Android 16 iniciado para conferir integração nativa; nenhum celular físico em ADB.
+  Interrupção anterior por limite da revisão automática de aprovação; retomado após
+  “Continue” do dono, sem contornar aprovação. Ainda faltam concluir QA, PR/CI/merge,
+  publicação e backup de 24/10/2026. Artefatos em .local/verificacao/celulares-2026-10-24/.
 
 ## Conferência em aparelho físico pendente
 
