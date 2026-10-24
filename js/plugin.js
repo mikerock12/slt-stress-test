@@ -6,12 +6,13 @@ export const BASE = 'http://127.0.0.1:5299';
 export const PROTOCOLO = 1;
 export const DOWNLOAD = 'https://github.com/mikerock12/slt-stress-test/releases/latest/download/SLTStressTestPlugin.exe';
 
-async function pedir(caminho, { metodo = 'GET', corpo, tempo = 4000 } = {}) {
+async function pedir(caminho, { metodo = 'GET', corpo, tempo = 4000, signal } = {}) {
   const resp = await fetch(BASE + caminho, {
     method: metodo,
     headers: metodo === 'GET' ? {} : { 'Content-Type': 'application/json', 'X-SLT-Plugin': '1' },
     body: corpo ? JSON.stringify(corpo) : undefined,
-    signal: AbortSignal.timeout(tempo),
+    signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(tempo)]) : AbortSignal.timeout(tempo),
+    targetAddressSpace: 'loopback',
     cache: 'no-store',
   });
   const dados = await resp.json().catch(() => ({}));
@@ -22,21 +23,19 @@ async function pedir(caminho, { metodo = 'GET', corpo, tempo = 4000 } = {}) {
 // Permissão do Chrome para um site acessar 127.0.0.1 ("acesso à rede local"):
 // 'granted', 'prompt', 'denied' ou null quando o navegador não tem esse controle.
 export async function permissaoRedeLocal() {
-  for (const name of ['local-network-access', 'loopback-network']) {
+  for (const name of ['loopback-network', 'local-network-access']) {
     try { return (await navigator.permissions.query({ name })).state; } catch { /* nome não suportado */ }
   }
   return null;
 }
 
-// Devolve a apresentação do plugin ou null se ele não estiver ligado.
-// Com a permissão pendente, o Chrome segura o pedido até a pessoa responder ao aviso:
-// por isso o tempo de espera é longo nesse caso.
-// Mesmo com 'denied' a tentativa é feita: uma página local (ou um navegador embutido) fala
-// com 127.0.0.1 sem passar por essa permissão, e o estado informado não reflete isso.
-export async function detectarPlugin() {
-  const permissao = await permissaoRedeLocal();
+// Começa o fetch no próprio clique, antes de consultar permissões. A apresentação faz
+// consultas WMI/SMART e pode demorar na primeira abertura: 1,5 s não bastava quando o
+// Chrome já tinha permissão. Cada tentativa tem URL própria e prazo de 60 s, incluindo
+// o aviso de rede local; um novo clique pode cancelar a tentativa antiga.
+export async function detectarPlugin({ signal } = {}) {
   try {
-    const ola = await pedir('/v1/ola', { tempo: permissao === 'prompt' ? 60000 : 1500 });
+    const ola = await pedir(`/v1/ola?tentativa=${crypto.randomUUID()}`, { tempo: 60000, signal });
     return ola.protocolo === PROTOCOLO ? ola : null;
   } catch {
     return null;
@@ -51,16 +50,32 @@ export const cancelarBenchmark = () => pedir('/v1/disco/benchmark/cancelar', { m
 
 // Resumo da memória instalada: "16 GB DDR4 · 2133 MT/s (2 pentes)".
 export function resumoMemoria(pentes = []) {
-  if (!pentes.length) return null;
-  const total = pentes.reduce((s, p) => s + (p.capacidadeGB || 0), 0);
-  const tipos = [...new Set(pentes.map((p) => p.tipo).filter((t) => t && t !== 'desconhecido'))].join('/');
-  const freqs = pentes.map((p) => p.configuradaMTs || p.velocidadeMTs).filter(Boolean);
-  const freq = freqs.length ? Math.min(...freqs) : null;
-  return `${Math.round(total)} GB ${tipos}${freq ? ` · ${freq} MT/s` : ''} (${pentes.length} ${pentes.length === 1 ? 'pente' : 'pentes'})`.replace('  ', ' ');
+  if (!Array.isArray(pentes) || !pentes.length) return null;
+  const capacidades = pentes.map((p) => p.capacidadeGB);
+  const capacidade = capacidades.every((n) => Number.isFinite(n) && n > 0)
+    ? `${numeroMemoria(capacidades.reduce((s, n) => s + n, 0))} GB`
+    : 'capacidade não informada';
+  const tipos = [...new Set(pentes.map((p) => p.tipo && p.tipo !== 'desconhecido' ? p.tipo : 'tipo não informado'))].join('/');
+  const freq = frequenciaMemoria(pentes);
+  return `${capacidade} ${tipos}${freq ? ` · ${freq} MT/s` : ''} (${pentes.length} ${pentes.length === 1 ? 'pente' : 'pentes'})`;
+}
+
+const numeroMemoria = (n) => n.toLocaleString('pt-BR', { maximumFractionDigits: 6 });
+
+// Painel e relatório usam a mesma leitura nativa. A estimativa deviceMemory não
+// identifica capacidade física nem DDR e não deve ocupar o lugar desses dados.
+export function descricaoMemoria({ plugin, android } = {}) {
+  const instalada = resumoMemoria(plugin?.memoria);
+  if (instalada) return instalada;
+  if (Number.isFinite(android?.memoria?.totalGB) && android.memoria.totalGB > 0) {
+    return `${numeroMemoria(android.memoria.totalGB)} GiB · ${android.memoria.tipo || 'tipo não informado'} (Android)`;
+  }
+  if (plugin) return 'Capacidade e tipo não informados pelo Windows';
+  return 'Não identificada — no Windows, abra o plugin para ler capacidade e tipo';
 }
 
 export function frequenciaMemoria(pentes = []) {
-  const freqs = pentes.map((p) => p.configuradaMTs || p.velocidadeMTs).filter(Boolean);
+  const freqs = (Array.isArray(pentes) ? pentes : []).map((p) => p.configuradaMTs || p.velocidadeMTs).filter((n) => Number.isFinite(n) && n > 0);
   return freqs.length ? Math.min(...freqs) : null;
 }
 

@@ -228,7 +228,10 @@ links. Nenhum código delas foi copiado.
 
 ## Em andamento
 
-(vazio)
+- 24/10/2026 — Codex, branch `codex/corrigir-plugin-memoria`: corrigir reconexão do
+  plugin após instalação sem reiniciar Chrome e usar capacidade/tipo reais de RAM no
+  painel e relatório. Dono dos arquivos `js/app.js`, `js/plugin.js`, `js/relatorio.js`,
+  testes e documentação. Validação em andamento; nenhuma mudança de driver ou Android.
 
 ## Conferência em aparelho físico pendente
 

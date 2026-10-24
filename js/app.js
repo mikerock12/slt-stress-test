@@ -10,7 +10,7 @@ import { METRICAS, NOMES } from './avaliacao.js';
 import { formatarDuracao, formatarNumero } from './metricas.js';
 import { sparkline } from './graficos.js';
 import { gerarRelatorio } from './relatorio.js';
-import { DOWNLOAD, MonitorSensores, detectarPlugin, lerDiscos, permissaoRedeLocal, resumoMemoria } from './plugin.js';
+import { DOWNLOAD, MonitorSensores, detectarPlugin, lerDiscos, permissaoRedeLocal, resumoMemoria, descricaoMemoria } from './plugin.js';
 import { LIMITES_PADRAO, ProtecaoTemperatura, nivel, normalizarLimites } from './protecao.js';
 import { DOWNLOAD_APK, inventarioAndroid, sensoresAndroid, MonitorAndroid, TesteAndroid } from './android.js';
 import { iniciarRanking } from './ranking.js';
@@ -56,7 +56,7 @@ async function mostrarSistema() {
   const linhas = [
     ['Dispositivo', android ? `${android.marca} ${android.modelo}` : sistema.dispositivo.tipo === 'celular' ? 'Celular / tablet' : 'Computador'],
     ['Processador', sistema.threads ? `${sistema.threads} threads lógicas` : 'não informado'],
-    ['Memória', sistema.memoriaGB ? `${sistema.memoriaGB >= 8 ? '8 GB ou mais' : `~${sistema.memoriaGB} GB`}` : 'não informada'],
+    ['Memória RAM', descricaoMemoria({ plugin, android })],
     ['GPU', sistema.gpu],
     ['Sistema', `${sistema.so} · ${sistema.navegador}`],
     ['Tela', sistema.tela],
@@ -66,7 +66,7 @@ async function mostrarSistema() {
   if (sistema.bateria) {
     linhas.push(['Energia', `${sistema.bateria.carregando ? 'na tomada' : 'na bateria'} · ${sistema.bateria.nivel}%`]);
   }
-  $('#sistema').innerHTML = linhas.map(([t, d]) => `<div><dt>${t}</dt><dd>${escapar(d)}</dd></div>`).join('');
+  $('#sistema').innerHTML = linhas.map(([t, d]) => `<div><dt>${t}</dt><dd${t === 'Memória RAM' ? ' data-memoria' : ''}>${escapar(d)}</dd></div>`).join('');
 
   const sel = $('#cpu-threads');
   const n = sistema.threads || 4;
@@ -102,27 +102,58 @@ function pluginJaUsado() {
 
 let detectando = false;
 let permissaoPlugin = null;
+let tentativaPlugin = null;
 
-async function atualizarPlugin() {
-  // Com a permissão de rede local pendente, um pedido pode esperar até 60 s: não empilhar.
-  if (detectando) return;
+async function atualizarPlugin({ reiniciar = false } = {}) {
+  if (detectando && !reiniciar) return;
+  tentativaPlugin?.abort();
+  const tentativa = new AbortController();
+  tentativaPlugin = tentativa;
   detectando = true;
   const anterior = !!plugin;
-  permissaoPlugin = await permissaoRedeLocal();
-  if (permissaoPlugin === 'prompt') mostrarPlugin();
-  try { plugin = await detectarPlugin(); } finally { detectando = false; }
-  permissaoPlugin = await permissaoRedeLocal();
-  if (plugin) lembrarPlugin();
+  mostrarPlugin();
+  // Não aguardar Permissions API antes do fetch: preserva o gesto do clique.
+  const resposta = detectarPlugin({ signal: tentativa.signal });
+  permissaoRedeLocal().then((estado) => {
+    if (tentativaPlugin !== tentativa) return;
+    permissaoPlugin = estado;
+    mostrarPlugin();
+  });
+  const encontrado = await resposta;
+  const permissao = await permissaoRedeLocal();
+  // Uma resposta cancelada/antiga nunca sobrescreve uma conexão mais recente.
+  if (tentativaPlugin !== tentativa) return;
+  plugin = encontrado;
+  permissaoPlugin = permissao;
+  detectando = false;
+  if (plugin) {
+    lembrarPlugin();
+    clearInterval(procurandoPlugin);
+    procurandoPlugin = null;
+  }
   mostrarPlugin();
   if (plugin && !anterior && execucao) registrar('log', 'Plugin conectado: os sensores entram a partir do próximo teste.');
-  if (plugin) { clearInterval(procurandoPlugin); procurandoPlugin = null; }
 }
 
-function procurarPlugin() {
+function procurarPlugin({ reiniciar = false } = {}) {
   if (sistema?.so !== 'Windows') return;
-  atualizarPlugin();
+  lembrarPlugin();
   if (!procurandoPlugin) procurandoPlugin = setInterval(() => { if (!execucao) atualizarPlugin(); }, 4000);
+  return atualizarPlugin({ reiniciar });
 }
+
+function verificarPluginAgora() {
+  return procurarPlugin({ reiniciar: true });
+}
+
+// A pessoa sai do Chrome para instalar/abrir o exe. Ao voltar, retoma a procura
+// somente se já optou pelo plugin; nunca pede rede local a um visitante novo.
+function retomarBuscaPlugin() {
+  if (!document.hidden && !execucao && !plugin && pluginJaUsado()) procurarPlugin();
+}
+window.addEventListener('focus', retomarBuscaPlugin);
+window.addEventListener('pageshow', retomarBuscaPlugin);
+document.addEventListener('visibilitychange', retomarBuscaPlugin);
 
 // ---------- Proteção de temperatura ----------
 
@@ -186,6 +217,8 @@ function mostrarEstadoAndroid(s) {
 }
 
 function mostrarPlugin() {
+  const memoria = $('#sistema [data-memoria]');
+  if (memoria) memoria.textContent = descricaoMemoria({ plugin, android });
   const caixa = $('#plugin-estado');
   if (sistema?.so !== 'Windows') {
     caixa.innerHTML = android ? '<p><strong>Aplicativo Android conectado.</strong> Veja os dados e fontes na seção Aplicativo.</p>' : '<p>Testes no navegador. Consulte a seção Aplicativo para os recursos nativos do seu sistema.</p>';
@@ -203,12 +236,13 @@ function mostrarPlugin() {
   }
   if (!plugin) {
     caixa.className = 'plugin-estado';
-    caixa.innerHTML = `<p><strong>Plugin não conectado.</strong> Sem ele ficam de fora temperatura,
+    caixa.innerHTML = `<p role="status" aria-live="polite"><strong>${detectando ? 'Verificando o plugin…' : 'Plugin não conectado.'}</strong> Sem ele ficam de fora temperatura,
       clocks reais, frequência da memória, SMART e o teste de disco real.</p>
       <div class="acoes"><a class="botao primario" href="${DOWNLOAD}" data-baixar>Baixar plugin</a>
-      <button type="button" class="botao" data-verificar>${procurandoPlugin ? 'Procurando…' : 'Já abri: verificar'}</button></div>
-      ${permissaoPlugin === 'prompt' && procurandoPlugin ? '<p class="alerta">O Chrome está perguntando se este site pode acessar a rede local: clique em <strong>Permitir</strong> no aviso perto da barra de endereço.</p>' : ''}
-      ${permissaoPlugin === 'denied' && procurandoPlugin ? '<p class="alerta">O acesso à rede local foi bloqueado para este site. Clique no ícone à esquerda do endereço, libere "Rede local" e recarregue a página.</p>' : ''}`;
+      <button type="button" class="botao" data-verificar>${detectando ? 'Tentar novamente agora' : 'Já abri: verificar'}</button></div>
+      ${procurandoPlugin ? '<p class="nota">A procura continua automaticamente. Aguarde a inicialização do plugin; não é preciso fechar o navegador.</p>' : ''}
+      ${permissaoPlugin === 'prompt' && procurandoPlugin ? '<p class="alerta">Se o Chrome pedir acesso à rede local ou a aplicativos neste computador, clique em <strong>Permitir</strong> no aviso perto da barra de endereço.</p>' : ''}
+      ${permissaoPlugin === 'denied' && procurandoPlugin ? '<p class="alerta">O acesso à rede local foi bloqueado para este site. Clique no ícone à esquerda do endereço, permita o acesso à rede local ou a aplicativos neste computador e clique em “Já abri: verificar”.</p>' : ''}`;
     $('#opcao-disco-alvo').hidden = true;
     alvo.value = 'navegador';
     return;
@@ -580,9 +614,9 @@ async function finalizar(motivo) {
 
 $('#btn-selecionados').addEventListener('click', () => pedirInicio(false));
 $('#btn-baixar-plugin').href = DOWNLOAD;
-$('#btn-verificar-plugin').addEventListener('click', procurarPlugin);
+$('#btn-verificar-plugin').addEventListener('click', verificarPluginAgora);
 document.addEventListener('click', (e) => {
-  if (e.target.closest('[data-verificar]')) procurarPlugin();
+  if (e.target.closest('[data-verificar]')) verificarPluginAgora();
   // Quem baixou vai abrir o plugin em seguida: começa a procurar.
   if (e.target.closest('[data-baixar], #btn-baixar-plugin')) { lembrarPlugin(); setTimeout(procurarPlugin, 3000); }
 });
