@@ -53,6 +53,9 @@ export function analisar(dados) {
   }
   const avaliacoes = Object.fromEntries(Object.entries(componentes).filter(([id]) => id !== 'pressao').map(([id, c]) => [id, c.avaliacao]));
   const geral = vereditoGeral(avaliacoes);
+  const errosMedidos = Object.values(componentes).some((c) => (c.resumo.erros?.total || 0) > 0 || (c.resumo.artefatos?.total || 0) > 0);
+  const falhaExecucao = !errosMedidos && Object.values(dados.componentes).some((c) => c.falhaFatal || c.info?.falhaFatal);
+  if (geral.status === 'falha' && falhaExecucao) geral.titulo = 'Teste incompleto: falha na execução';
   if (componentes.pressao?.avaliacao.status === 'atencao' && geral.status === 'ok') {
     geral.status = 'atencao';
     geral.titulo = 'Aprovado com ressalvas';
@@ -62,15 +65,15 @@ export function analisar(dados) {
     geral.status = 'atencao';
     geral.titulo = 'Interrompido pela proteção de temperatura';
   }
-  if (dados.interrupcaoAndroid && geral.status !== 'falha') {
+  if (dados.interrupcaoAndroid && !errosMedidos) {
     geral.status = 'atencao';
     geral.titulo = 'Teste interrompido no Android';
   }
-  if (dados.interrupcaoMovel && geral.status !== 'falha') {
+  if (dados.interrupcaoMovel && !errosMedidos) {
     geral.status = 'atencao';
     geral.titulo = 'Interrompido pela proteção de carga do celular';
   }
-  return { geral, componentes };
+  return { geral, componentes, falhaExecucao };
 }
 
 function textoProtecao(p) {
@@ -231,7 +234,7 @@ export function gerarRelatorio(container, dados) {
           : {
           ok: 'Nenhum erro de cálculo, de memória, de imagem ou de dados, e o desempenho se manteve. Para este teste, o sistema se comportou como um computador estável.',
           atencao: 'Não houve erros, mas algo merece atenção (geralmente queda de desempenho por calor). Veja os detalhes abaixo.',
-          falha: 'Foram encontrados erros. Um computador estável não erra nesses testes: veja abaixo qual componente falhou e o que fazer.',
+          falha: analise.falhaExecucao ? 'Uma carga não conseguiu concluir ou confirmar a limpeza. Isso não comprova defeito do hardware. Consulte o motivo abaixo e aguarde a liberação dos recursos antes de repetir.' : 'Foram encontrados erros nos dados ou cálculos verificados. Veja abaixo qual componente registrou os erros e o que fazer.',
           na: 'O teste foi curto demais ou não conseguiu medir. Tente de novo com pelo menos 2 minutos.',
         }[geral.status]}</p>
       </div>

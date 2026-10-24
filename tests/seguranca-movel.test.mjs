@@ -4,6 +4,7 @@ import { ProtecaoDesempenhoMovel, encerrarComPrazo } from '../js/seguranca-movel
 import { avaliar, resumirComponente } from '../js/avaliacao.js';
 import { TesteGPU } from '../js/testes/gpu.js';
 import { TesteAndroid } from '../js/android.js';
+import { analisar } from '../js/relatorio.js';
 
 test('celular interrompe queda persistente, sem tratar os números como temperatura', () => {
   const p = new ProtecaoDesempenhoMovel(); let disparo;
@@ -32,6 +33,16 @@ test('encerramento com erro ou tarefa pendurada não bloqueia o relatório', asy
   assert.equal(await encerrarComPrazo({ parar: async () => {} }, 20), null);
   assert.match(await encerrarComPrazo({ parar: () => { throw new Error('falha de limpeza'); } }), /falha de limpeza/);
   assert.match(await encerrarComPrazo({ parar: () => new Promise(() => {}) }, 20), /prazo/);
+});
+
+test('guarda/limpeza sem confirmação não é reprovação de hardware; erro medido permanece falha', () => {
+  const dados = { ids: ['cpu'], sistema: { dispositivo: { tipo: 'celular' } }, interrupcaoAndroid: 'A interface deixou de responder.', componentes: { cpu: { series: { gflops: [1,1,1], erros: [0] }, falhaFatal: 'Limpeza não confirmou a parada.' } } };
+  assert.equal(analisar(dados).geral.titulo, 'Teste interrompido no Android');
+  assert.equal(analisar(dados).geral.status, 'atencao');
+  dados.componentes.cpu.series.erros = [1];
+  assert.equal(analisar(dados).geral.status, 'falha');
+  dados.componentes.cpu.series.erros = [0]; delete dados.interrupcaoAndroid;
+  assert.equal(analisar(dados).geral.titulo, 'Teste incompleto: falha na execução');
 });
 
 test('bridge Android devolve a parada antes da limpeza e consulta a confirmação', async (t) => {

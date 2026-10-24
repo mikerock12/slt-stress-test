@@ -118,7 +118,7 @@ export function avaliar(componente, resumo, extra = {}) {
   const amostras = Object.values(resumo).reduce((n, r) => Math.max(n, r.n || 0), 0);
   if (componente !== 'pressao' && amostras === 0) {
     const porque = componente === 'gpu'
-      ? 'Nenhum quadro foi medido: a aba ficou escondida ou minimizada e o navegador pausou a animação.'
+      ? 'Nenhum quadro concluído foi medido: a GPU pode não ter iniciado/concluído a carga, ou a aba ficou escondida e o navegador pausou a animação.'
       : 'O teste não chegou a produzir medições.';
     return { status: 'na', titulo: 'Sem dados', motivos: [porque] };
   }
