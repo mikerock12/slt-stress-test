@@ -36,6 +36,49 @@ links. Nenhum código delas foi copiado.
 
 ## Estado atual
 
+- 24/10/2026 — **Estabilidade e proteção móvel publicadas**, PR
+  [#9](https://github.com/mikerock12/slt-stress-test/pull/9), merge
+  `b8da7dab511f2b475a9a54d7360e097cf0972875`, CI final verde
+  [40086207659](https://github.com/mikerock12/slt-stress-test/actions/runs/40086207659).
+  PR [#10](https://github.com/mikerock12/slt-stress-test/pull/10) removeu o rótulo antigo
+  do aviso de download Web, merge `698f6b17bbba86c1a9f7edf90987b9c88e404774`, CI verde.
+  Release [v1.3.0](https://github.com/mikerock12/slt-stress-test/releases/tag/v1.3.0),
+  APK 1.3.0/code 4 assinado com a mesma chave; plugin continua 1.2.0 do CI já aprovado.
+  APK SHA-256 `071c99f91a7beb5b7a93918bd4c7aba286645e89d51312682a2dc0713f90d457`.
+  O APK corresponde ao código do PR #9; #10 alterou só o aviso Web, sem substituir o
+  binário no caminho versionado. URLs e releases anteriores preservadas.
+  Worker `57e17110-8a5a-44d5-b187-06ed43e9ba63`; nenhuma migração nova necessária.
+- Encerramento: bridge apenas sinaliza a parada, consulta assíncrona de limpeza com prazo,
+  guarda nativa por relógio monotônico e falta de pulso de 10 s, separada da coleta/root.
+  Nova execução aguarda as tarefas antigas; buffers/arquivo têm confirmação. GPU mantém
+  um lote em voo, fence sem espera e referência por PBO; perda de contexto/renderizador
+  encerra cargas. `webgl2-fence-v2` e contextos ficam separados dos testes antigos no banco.
+- Móvel: metade das threads (1 em até 2), GPU 360p/leve e memória 256 MiB com menos workers
+  como padrão, mantendo opções completas. Queda >= 50% persistente interrompe a carga;
+  sem sensor não confirma temperatura. Android interrompe em estado grave, índice >= 1,
+  bateria >= 43 °C ou limite CPU/GPU medido. Bateria e índice não são temperatura CPU/GPU.
+  Busca thermal de classe/virtual/índices diretos e hwmon, nomes CPU/GPU/Mali/MFG, fontes e
+  ausência explícita na interface. POCO e A52 informados como sem root: acesso varia por
+  firmware. Leituras do POCO exigem conferência física; não há acesso garantido a fonte bloqueada.
+  Falha de execução/limpeza sem erro medido não é tratada como defeito comprovado do hardware.
+- Verificação: 51/51 JS/SQLite; Java (FFT, corrupção, cargas, cancelamento, guarda e sensores);
+  build/lint, assinatura v2 e ELF/ZIP 16 KB nas quatro ABIs. Chrome e Firefox: CPU, GPU,
+  memória, disco e MAX STRESS por 2 min, JSON, PDF Chrome e impressão Firefox, sem erros JS.
+  Fixtures só locais cobrem A52 quente, POCO sem sensor, inicialização sem pronto e queda
+  móvel. Android 16: CPU 2 min sem erros; prazo nativo encerrou CPU/memória/disco e liberou
+  buffers/arquivo; sinalização de parada retornou em 5 ms no ensaio; página congelada não
+  impediu a guarda nativa. MAX em GPU emulada interrompeu aos 64 s por queda de 69% na GPU,
+  com zero erros nativos e limpeza confirmada. Não alegar MAX nativo completo de 2 min.
+  O AVD teve diálogo de ANR do Pixel Launcher; não atribuir ao app. Emulador encerrado.
+  Aparelhos físicos não estavam disponíveis via ADB nesta máquina.
+- Produção: download direto 200 sem redirecionamento, MIME/attachment e SHA corretos,
+  concluído no Chrome com UA POCO; Range foi ignorado com 200, não prometer retomada 206.
+  Perfis desktop/móvel e layout conferidos, consentimento desmarcado, quatro rankings 200,
+  entradas inválidas 400 e política 200, sem fixtures de produção. Backup de fontes,
+  histórico Git, release, fontes PawnIO, verificações e dump D1 em
+  `G:/Meu Drive/Backups/Smells Like Tech - Stress Test/2026-10-24/`, com integridade conferida.
+  Chave/senha não copiadas para a nova data; backup privado de 23/10 permanece preservado.
+
 - 23/10/2026 — **Download direto, PawnIO e privacidade publicados** nos PRs
   [#7](https://github.com/mikerock12/slt-stress-test/pull/7) e
   [#8](https://github.com/mikerock12/slt-stress-test/pull/8), ambos com CI verde nos três jobs.
@@ -185,30 +228,7 @@ links. Nenhum código delas foi copiado.
 
 ## Em andamento
 
-- Codex, branch `codex/corrige-estabilidade-celulares`: corrigir encerramento travado
-  em 01:59 no Galaxy A52, responsividade e proteção de carga em celulares (iPhone 11
-  com queda de CPU/GPU nas imagens), e descoberta/identificação de sensores no POCO
-  X7 PRO. Dono nesta tarefa de js/app.js, módulos de carga/proteção/relatório, Android,
-  interface, testes e documentação. Sem outros agentes. Conferir bridge síncrona,
-  encerramento nativo, tempo limite independente e fontes térmicas antes de alterar.
-  Não inventar CPU/GPU a partir da bateria nem contornar permissões do fabricante.
-  Entrega autorizada: commit/push/PR/CI/merge, produção e backup de 24/10/2026;
-  autorização antiga de copiar chave/senha não se estende à nova pasta/data.
-  Implementado: encerramento sem espera bloqueante na bridge; prazo/ausência de pulso
-  vigiados nativamente; GPU com fence e referência assíncrona, um lote em voo; perfil
-  inicial móvel menor com opções completas; proteção por queda persistente; estado térmico,
-  bateria e fontes sem confundir CPU/GPU. Busca térmica/sysfs/hwmon ampliada. POCO e A52
-  informados pelo dono como sem root; permissões variam por fabricante, sem garantia de
-  sensor bloqueado. Versão preparada: APK 1.3.0/code 4, plugin permanece 1.2.0.
-  Até aqui: 50 testes JS/SQLite, cargas/guarda/classificação Java, build/lint Android e
-  assinatura/alinhamento 16 KB passaram. Chrome: cinco testes de 2 min, JSON/PDF/capturas.
-  Firefox em conferência; corrigida exportação JSON com âncora anexada ao documento.
-  Fixtures apenas locais: A52 quente dispara; POCO sem sensor mantém null; inicialização
-  sem pronto termina no prazo; queda de desempenho móvel interrompe com texto correto.
-  AVD Android 16 iniciado para conferir integração nativa; nenhum celular físico em ADB.
-  Interrupção anterior por limite da revisão automática de aprovação; retomado após
-  “Continue” do dono, sem contornar aprovação. Ainda faltam concluir QA, PR/CI/merge,
-  publicação e backup de 24/10/2026. Artefatos em .local/verificacao/celulares-2026-10-24/.
+(vazio)
 
 ## Conferência em aparelho físico pendente
 
@@ -219,6 +239,11 @@ links. Nenhum código delas foi copiado.
 - Teste WebGPU compute como alternativa ao WebGL2.
 
 ## Histórico
+
+- 24/10/2026 — PRs #9/#10, CI verde, APK 1.3.0 e produção publicados; encerramento,
+  proteção móvel, fontes térmicas e relatórios corrigidos. Verificações e limites no
+  Estado atual; backup de 24/10 sem nova cópia da assinatura privada.
+
 
 - 23/10/2026 — PRs #7 e #8 integrados e publicados com CI verde; APK 1.2.1 em download
   direto, plugin 1.2.0 com PawnIO, licenças/fontes e controles de privacidade. Verificações

@@ -51,6 +51,7 @@ Worker com D1 para benchmarks; APK Android com interface embarcada e cargas Java
 | `android/` | APK com CPU/memória/disco nativos e WebGL2; ver `android/README.md` |
 | `privacidade.html` / `PRIVACIDADE.md` | Política pública e procedimentos de privacidade |
 | `worker/privacidade.js` / `js/privacidade.js` | Consentimento, exportação, exclusão e retenção |
+| `js/seguranca-movel.js` | Proteção por queda persistente e encerramento com prazo |
 
 ### Contrato dos testes
 
@@ -121,12 +122,25 @@ MAX STRESS de 2 min, conferir o relatório, a impressão em PDF e o JSON exporta
   a zona smellsliketech.com.br usa nameservers do Cloudflare, então o Registro.br não muda.
 - Repositório público no GitHub; backup em `G:/Meu Drive/Backups/Smells Like Tech - Stress Test/`.
 
-## Última entrega (23/10/2026)
+## Última entrega (24/10/2026)
 
-Em andamento em 24/10/2026: Codex, branch `codex/corrige-estabilidade-celulares`,
-investiga travamento ao encerrar no Galaxy A52, carga/proteção móvel no iPhone 11 e
-sensores Android/MediaTek no POCO X7 PRO. Escopo e verificações em contexto.md.
-Correções implementadas e APK 1.3.0 preparado; validações e entrega ainda em andamento.
+PRs #9 e #10 integrados com CI verde. Release v1.3.0 publicada: APK 1.3.0/code 4,
+mesmo certificado, plugin Windows 1.2.0 preservado. Worker
+`57e17110-8a5a-44d5-b187-06ed43e9ba63`. Encerramento Android sem espera bloqueante;
+prazo e ausência de pulso vigiados nativamente. GPU usa um lote em voo, fence e referência
+assíncrona; motor `webgl2-fence-v2` separado do anterior no ranking.
+Perfil móvel inicial menor, com opções completas disponíveis, e parada por queda persistente.
+Queda não é termômetro. Estado térmico, índice térmico e bateria são fontes separadas de
+CPU/GPU. Busca sysfs/thermal/hwmon ampliada; leitura sem root depende do fabricante.
+POCO e A52 do dono não têm root. Não prometer sensor bloqueado nem estimar temperatura.
+51 testes JS/SQLite, cargas/guarda/sensores Java, build/lint/assinatura/16 KB; Chrome e
+Firefox: cada teste e MAX STRESS 2 min, JSON e impressão. Android 16: CPU 2 min, prazo,
+limpeza e página congelada conferidos. MAX nativo foi interrompido pela proteção de queda,
+com cargas encerradas e recursos liberados; emulador não é referência física.
+Conferir os três celulares físicos continua pendente. Backup de 24/10/2026 exclui chave e
+senha; autorização privada de 23/10 permanece restrita à pasta/data originais.
+
+### Entrega anterior (23/10/2026)
 
 PRs #7 e #8 integrados, CI verde de site/API, Android e plugin. Release v1.2.1 publicada:
 APK Android 1.2.1 e plugin Windows 1.2.0 (mesmo binário aprovado no CI do PR #7).
