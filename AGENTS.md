@@ -122,11 +122,19 @@ MAX STRESS de 2 min, conferir o relatório, a impressão em PDF e o JSON exporta
   a zona smellsliketech.com.br usa nameservers do Cloudflare, então o Registro.br não muda.
 - Repositório público no GitHub; backup em `G:/Meu Drive/Backups/Smells Like Tech - Stress Test/`.
 
-## Correção em andamento (24/10/2026)
+## Última correção web (24/10/2026)
 
-Detecção do plugin após instalação e RAM real: branch `codex/corrigir-plugin-memoria`.
-Arquivos e progresso em `contexto.md` → Em andamento. Não instalar/reconfigurar PawnIO;
-o plugin 1.2.0 já entrega capacidade e tipo dos módulos pelo contrato existente.
+PR [#11](https://github.com/mikerock12/slt-stress-test/pull/11) integrado com CI verde;
+merge `a8550ff8ee120ab92709c41410cc35f07a3f265d`. Detecção do plugin após instalação corrigida: a
+apresentação não expira mais em 1,5 s com permissão concedida; tentativas canceláveis,
+URL própria, permissão específica de loopback e retomada ao voltar ao navegador.
+Painel e relatório usam capacidade/tipo/frequência dos módulos físicos do plugin.
+Windows sem dados e Android sem tipo continuam explícitos; nunca inferir DDR.
+60 testes, build, dry-run, detecção tardia/F5/repetição e cinco cargas de 2 min em
+Chrome/Firefox; JSON e impressão conferidos, sem envio de fixtures ao ranking.
+Worker `1c9b8e0b-46dc-4f15-9ec3-db04fba916c9` publicado e HTML/módulos conferidos por SHA-256.
+Plugin Windows 1.2.0 e APK 1.3.0 preservados; não exige reinstalar o plugin.
+Nenhuma instalação/reconfiguração de PawnIO nesta correção.
 
 ## Última entrega (24/10/2026)
 

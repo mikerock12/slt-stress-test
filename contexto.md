@@ -36,6 +36,27 @@ links. Nenhum código delas foi copiado.
 
 ## Estado atual
 
+- 24/10/2026 — **Detecção do plugin e RAM real publicadas**, PR
+  [#11](https://github.com/mikerock12/slt-stress-test/pull/11), CI
+  [40135027768](https://github.com/mikerock12/slt-stress-test/actions/runs/40135027768)
+  verde nos jobs site/API, Android e plugin; merge `a8550ff8ee120ab92709c41410cc35f07a3f265d`.
+  O prazo antigo de 1,5 s foi reproduzido com resposta de 2 s e permissão concedida:
+  antes falhava, depois conecta. Fetch no clique, prazo de até 60 s, cancelamento e
+  repetição manual, tentativas com UUID, permissão de loopback antes do nome legado,
+  retomada ao voltar ao navegador e mensagens de procura/bloqueio.
+  A RAM no painel e no relatório vem da soma dos módulos físicos e do tipo/frequência
+  informados pelo Windows; `deviceMemory` não ocupa mais esse campo. Informação
+  parcial/ausente e tipo não informado continuam explícitos. JSON conserva inventário.
+  Plugin 1.2.0 existente funciona; binários do Windows/Android não foram trocados.
+  60 testes JS/SQLite, sintaxe, build e dry-run; Chrome e Firefox: plugin fechado e aberto
+  depois, leitura lenta, F5, cancelamento/repetição, busca automática, painel/relatório,
+  JSON e impressão. CPU, GPU, RAM, disco e MAX STRESS por 2 min nos dois navegadores,
+  com exportações e sem erros JS. Um primeiro ensaio paralelo do Firefox excedeu o prazo
+  da automação no download; a repetição isolada completou as cinco cargas e exportações.
+  Fixtures locais, sem contribuição ao banco público; sem iniciar/instalar driver.
+  Worker `1c9b8e0b-46dc-4f15-9ec3-db04fba916c9`; HTML e três módulos JS em produção com
+  HTTP 200 e SHA-256 idêntico ao build aprovado. Sem migração nova de banco.
+
 - 24/10/2026 — **Estabilidade e proteção móvel publicadas**, PR
   [#9](https://github.com/mikerock12/slt-stress-test/pull/9), merge
   `b8da7dab511f2b475a9a54d7360e097cf0972875`, CI final verde
@@ -228,10 +249,7 @@ links. Nenhum código delas foi copiado.
 
 ## Em andamento
 
-- 24/10/2026 — Codex, branch `codex/corrigir-plugin-memoria`: corrigir reconexão do
-  plugin após instalação sem reiniciar Chrome e usar capacidade/tipo reais de RAM no
-  painel e relatório. Dono dos arquivos `js/app.js`, `js/plugin.js`, `js/relatorio.js`,
-  testes e documentação. Validação em andamento; nenhuma mudança de driver ou Android.
+(vazio)
 
 ## Conferência em aparelho físico pendente
 
@@ -242,6 +260,8 @@ links. Nenhum código delas foi copiado.
 - Teste WebGPU compute como alternativa ao WebGL2.
 
 ## Histórico
+
+- 24/10/2026 — PR #11: conexão do plugin sem reiniciar navegador e RAM real no painel/relatório; CI verde e produção conferida.
 
 - 24/10/2026 — PRs #9/#10, CI verde, APK 1.3.0 e produção publicados; encerramento,
   proteção móvel, fontes térmicas e relatórios corrigidos. Verificações e limites no
