@@ -12,8 +12,9 @@ import { sparkline } from './graficos.js';
 import { gerarRelatorio } from './relatorio.js';
 import { DOWNLOAD, MonitorSensores, detectarPlugin, lerDiscos, permissaoRedeLocal, resumoMemoria } from './plugin.js';
 import { LIMITES_PADRAO, ProtecaoTemperatura, nivel, normalizarLimites } from './protecao.js';
-import { DOWNLOAD_APK, inventarioAndroid, MonitorAndroid, TesteAndroid } from './android.js';
+import { DOWNLOAD_APK, inventarioAndroid, sensoresAndroid, MonitorAndroid, TesteAndroid } from './android.js';
 import { iniciarRanking } from './ranking.js';
+import { ProtecaoDesempenhoMovel, encerrarComPrazo } from './seguranca-movel.js';
 
 const CLASSES = { cpu: TesteCPU, gpu: TesteGPU, memoria: TesteMemoria, disco: TesteDisco, pressao: MonitorPressao };
 const ORDEM = ['cpu', 'gpu', 'memoria', 'disco'];
@@ -35,11 +36,14 @@ async function mostrarSistema() {
   document.body.dataset.dispositivo = sistema.dispositivo.tipo;
   $('#tipo-dispositivo').textContent = movel ? `Celular / tablet · ${sistema.dispositivo.plataforma}` : 'Computador · desktop';
   if (movel) {
-    $('#titulo-hero').textContent = 'Coloque seu celular no limite e conheça seu desempenho.';
-    document.querySelector('[name=gpuRes]').value = '1280x720';
+    $('#titulo-hero').textContent = 'Conheça o desempenho e a estabilidade do seu celular.';
+    document.querySelector('[name=gpuRes]').value = '640x360';
+    document.querySelector('[name=gpuInt]').value = '64';
     document.querySelector('[name=memMiB]').value = '256';
     document.querySelector('[name=discoMiB]').value = '256';
     document.querySelector('input[name=duracao][value="120"]').checked = true;
+    $('#nota-movel').hidden = false;
+    $('#nota-aovivo').textContent = 'Mantenha o aplicativo visível. Se esquentar ou a tela apresentar problemas, pare o teste e aguarde esfriar. O teste interrompe diante de queda persistente de desempenho; isso não substitui um sensor térmico.';
   }
   $('#android').hidden = !movel;
   $('#plugin').hidden = sistema.so !== 'Windows';
@@ -70,11 +74,12 @@ async function mostrarSistema() {
   if (n > 2) opcoes.push([Math.ceil(n / 2), `Metade (${Math.ceil(n / 2)})`]);
   opcoes.push([1, '1 thread']);
   sel.innerHTML = opcoes.map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
+  if (movel) sel.value = String(n > 2 ? Math.ceil(n / 2) : 1);
 
   const avisos = [];
   if (!sistema.webgl2) { desativarCard('gpu', 'WebGL2 indisponível'); avisos.push('GPU: o navegador não oferece WebGL2 (ative a aceleração por hardware).'); }
   if (!sistema.opfs && !android) { desativarCard('disco', 'OPFS indisponível'); avisos.push('Disco: o navegador não oferece o armazenamento OPFS.'); }
-  if (sistema.bateria && !sistema.bateria.carregando) avisos.push('Seu aparelho está na bateria: ligue na tomada para o resultado refletir o desempenho máximo.');
+  if (!movel && sistema.bateria && !sistema.bateria.carregando) avisos.push('Seu aparelho está na bateria: ligue na tomada para o resultado refletir o desempenho máximo.');
   if (avisos.length) {
     const el = $('#aviso-compat');
     el.innerHTML = avisos.map(escapar).join('<br>');
@@ -124,7 +129,10 @@ function procurarPlugin() {
 function lerLimites() {
   let salvos = {};
   try { salvos = JSON.parse(localStorage.getItem('slt-protecao') || '{}'); } catch { /* sem storage */ }
-  return normalizarLimites({ ...LIMITES_PADRAO, ...salvos });
+  const padrao = sistema?.dispositivo.tipo === 'celular' ? { ...LIMITES_PADRAO, cpu: 80, gpu: 80 } : LIMITES_PADRAO;
+  // Os antigos padrões de desktop também eram gravados automaticamente no celular.
+  if (sistema?.dispositivo.tipo === 'celular' && salvos.cpu === 95 && salvos.gpu === 90) { salvos.cpu = 80; salvos.gpu = 80; }
+  return normalizarLimites({ ...padrao, ...salvos });
 }
 
 function limitesDaTela() {
@@ -163,12 +171,26 @@ function mostrarTemperaturas(temps, limites) {
   }).join('');
 }
 
+function mostrarEstadoAndroid(s) {
+  const niveis = ['normal', 'leve', 'moderado', 'grave', 'crítico', 'emergência', 'desligamento'];
+  const estado = niveis[s.estadoTermico] || 'não disponível';
+  const bateria = Number.isFinite(s.bateria?.tempC) ? `${s.bateria.tempC.toFixed(1)} °C` : 'não disponível';
+  const indice = Number.isFinite(s.indiceTermico) ? ` Índice térmico: ${s.indiceTermico.toFixed(2)} (1 = limite grave; não é °C).` : '';
+  $('#android-sensores-vivo').textContent = `Estado térmico Android: ${estado}. Bateria: ${bateria} (sensor separado).${indice}`;
+  $('#android-sensores-detalhes').textContent = ['cpu', 'gpu'].map((k) => {
+    const chave = `${k}TempC`;
+    return `${k.toUpperCase()}: ${Number.isFinite(s[chave]) ? `${s[chave].toFixed(1)} °C · ${s.fontes?.[chave] || s.leituraAvancada?.fontes?.[chave] || 'sensor identificado'}` : s.ausencias?.[chave] || 'Aguardando leitura.'}`;
+  }).join('\n');
+  $('#android-leituras').textContent = $('#android-sensores-vivo').textContent + '\n' + $('#android-sensores-detalhes').textContent;
+  $('#android-dados').textContent = JSON.stringify({ inventario: android, sensores: s }, null, 2);
+}
+
 function mostrarPlugin() {
   const caixa = $('#plugin-estado');
   if (sistema?.so !== 'Windows') {
     caixa.innerHTML = android ? '<p><strong>Aplicativo Android conectado.</strong> Veja os dados e fontes na seção Aplicativo.</p>' : '<p>Testes no navegador. Consulte a seção Aplicativo para os recursos nativos do seu sistema.</p>';
     $('#protecao').hidden = !android;
-    if (android) $('#protecao-nota').textContent = 'A proteção de CPU/GPU funciona quando o fabricante permite ler esses sensores. O aplicativo também interrompe as cargas em estado térmico crítico ou bateria a 45 °C. Temperatura da bateria é uma leitura separada.';
+    if (android) $('#protecao-nota').textContent = 'CPU/GPU: limites só funcionam com sensores acessíveis; o app mostra a fonte ou o motivo da ausência. Também para em estado térmico grave do Android, bateria a 43 °C ou queda persistente de desempenho. Bateria não é temperatura da CPU/GPU.';
     return;
   }
   const alvo = $('#disco-alvo');
@@ -229,7 +251,7 @@ function lerOpcoes() {
   return {
     cpu: { threads: Number(form('cpuThreads').value) },
     gpu: { resolucao: [w, h], intensidade: Number(form('gpuInt').value) },
-    memoria: { mib: Number(form('memMiB').value) },
+    memoria: { mib: Number(form('memMiB').value), workers: sistema?.dispositivo.tipo === 'celular' ? 1 : undefined },
     disco: { mib: Number(form('discoMiB').value), unidade: plugin ? form('discoAlvo').value : 'navegador' },
     pressao: {},
   };
@@ -336,30 +358,51 @@ async function executar(ids, duracaoS, modo) {
     opcoes,
     compartilhar: $('#compartilhar-benchmark').checked,
   };
+  const ex = execucao;
+  ex.protecaoMovel = sistema.dispositivo.tipo === 'celular' ? new ProtecaoDesempenhoMovel() : null;
+  // Começa antes das inicializações: um worker que não avisa "pronto" não prende o prazo.
+  ex.relogio = setInterval(() => { if (execucao === ex) tique(); }, 1000);
+  if (duracaoS) ex.prazo = setTimeout(() => { if (execucao === ex) finalizar('Tempo concluído'); }, duracaoS * 1000);
+  opcoes.gpu.prazoMs = duracaoS ? ex.t0 + duracaoS * 1000 : Infinity;
   document.body.classList.add('rodando');
   $('#relatorio').hidden = true;
   $('#aovivo').hidden = false;
   $('#log').innerHTML = '';
+  $('#android-sensores-vivo').textContent = '';
+  $('#android-sensores-detalhes').textContent = '';
+  $('#tempo-decorrido').textContent = '00:00';
+  $('#tempo-restante').textContent = '';
+  $('#barra-progresso').style.width = '0%';
   $('#aovivo-modo').textContent = modo;
   opcoes.gpu.canvas = prepararTelaGPU(ids.includes('gpu'));
   $('#aovivo').scrollIntoView({ behavior: 'smooth', block: 'start' });
   for (const b of document.querySelectorAll('#btn-selecionados, #btn-max')) b.disabled = true;
 
-  try { execucao.wakeLock = await navigator.wakeLock?.request('screen'); } catch { /* sem wake lock */ }
+  try {
+    const lock = await navigator.wakeLock?.request('screen');
+    if (ex.finalizando) { await lock?.release(); return; }
+    ex.wakeLock = lock;
+  } catch { /* sem wake lock */ }
+  if (ex.finalizando) return;
 
   const todos = [...ids];
   if (MonitorPressao.disponivel()) todos.push('pressao');
-  const aoEvento = ({ tipo, msg }) => registrar(tipo, msg);
+  const aoEvento = ({ tipo, msg }) => { if (execucao === ex && !ex.finalizando) registrar(tipo, msg); };
   registrar('log', `${modo} iniciado: ${ids.map((i) => NOMES[i]).join(', ')} · ${duracaoS ? formatarDuracao(duracaoS) : 'sem limite de tempo'}.`);
 
   const discoReal = ids.includes('disco') && opcoes.disco.unidade !== 'navegador';
   if (android) {
+    if (typeof globalThis.SLTAndroid.preparar === 'function') {
+      const preparado = JSON.parse(globalThis.SLTAndroid.preparar(JSON.stringify({ duracaoS, limites: limitesDaTela() })));
+      if (preparado.erro) { registrar('erro', preparado.erro); await finalizar(preparado.erro); return; }
+    }
     execucao.monitor = new MonitorAndroid(); execucao.monitor.iniciar();
     execucao.protecao = new ProtecaoTemperatura(limitesDaTela());
     registrar('log', 'Aplicativo Android: testes nativos e sensores disponíveis ativos.');
   } else if (plugin) {
     let discos = [];
     try { discos = await lerDiscos(); } catch { /* segue sem o mapa de discos */ }
+    if (ex.finalizando) return;
     execucao.monitor = new MonitorSensores(plugin, {
       gpuWebgl: sistema?.gpu,
       unidadeDisco: discoReal ? opcoes.disco.unidade : 'C:',
@@ -379,27 +422,27 @@ async function executar(ids, duracaoS, modo) {
   montarPaineis(ids);
 
   await Promise.all(todos.map(async (id) => {
+    if (ex.finalizando) return;
     const Classe = id === 'disco' && discoReal ? TesteDiscoPlugin : CLASSES[id];
     const inst = android && ['cpu', 'memoria', 'disco'].includes(id) ? new TesteAndroid(id) : new Classe();
     const comp = { instancia: inst, series: {}, iniciado: false };
-    execucao.componentes[id] = comp;
+    ex.componentes[id] = comp;
     try {
       await inst.iniciar(opcoes[id], aoEvento);
+      if (ex.finalizando) { await inst.parar(); return; }
       comp.iniciado = true;
     } catch (e) {
       comp.falhaFatal = `Não foi possível iniciar: ${e.message}`;
       registrar('erro', `${NOMES[id]}: ${e.message}`);
     }
   }));
-  if (!execucao) return; // parado durante a inicialização
-
-  execucao.relogio = setInterval(tique, 1000);
 }
 
 function tique() {
   const ex = execucao;
-  if (!ex) return;
+  if (!ex || ex.finalizando) return;
   const decorrido = (performance.now() - ex.t0) / 1000;
+  if (ex.duracaoS && decorrido >= ex.duracaoS) { finalizar('Tempo concluído'); return; }
   if (android && ex.monitor?.ultima?.paradaTermica) {
     registrar('erro', ex.monitor.ultima.paradaTermica);
     ex.interrupcaoAndroid = ex.monitor.ultima.paradaTermica;
@@ -427,6 +470,16 @@ function tique() {
     if (fatal && !comp.falhaFatal) comp.falhaFatal = fatal;
   }
   atualizarPaineis();
+  if (android && ex.monitor?.ultima) mostrarEstadoAndroid(ex.monitor.ultima);
+  const falhaGpu = ex.componentes.gpu?.instancia.falhaFatal;
+  if (falhaGpu) { ex.componentes.gpu.falhaFatal = falhaGpu; finalizar('GPU interrompida: ' + falhaGpu); return; }
+  const queda = ex.protecaoMovel?.verificar(decorrido, {
+    cpu: ex.componentes.cpu?.series.gflops?.at(-1), gpu: ex.componentes.gpu?.series.fps?.at(-1),
+  });
+  if (queda) {
+    ex.interrupcaoMovel = `Carga encerrada após queda persistente de ${Math.round(queda.queda)}% na ${queda.componente.toUpperCase()}. Pode haver limite térmico, de energia ou disputa por recursos; sem sensor não é possível confirmar a temperatura. Aguarde o aparelho esfriar antes de repetir.`;
+    finalizar(ex.interrupcaoMovel); return;
+  }
 
   // A proteção olha CPU e GPU mesmo quando só outro componente está sendo testado.
   if (ex.protecao && ex.monitor?.ultima) {
@@ -460,12 +513,22 @@ async function finalizar(motivo) {
   if (!ex || ex.finalizando) return;
   ex.finalizando = true;
   clearInterval(ex.relogio);
+  clearTimeout(ex.prazo);
   const duracaoReal = (performance.now() - ex.t0) / 1000;
   registrar('log', `${motivo}. Encerrando testes…`);
   $('#btn-parar').disabled = true;
+  $('#btn-parar').textContent = 'Encerrando e liberando recursos…';
+  $('#tempo-decorrido').textContent = formatarDuracao(duracaoReal);
+  $('#tempo-restante').textContent = ' · encerrando';
+  if (motivo === 'Tempo concluído') $('#barra-progresso').style.width = '100%';
 
+  // A GPU para antes de qualquer espera na bridge nativa ou na limpeza de arquivos.
+  await ex.componentes.gpu?.instancia.parar();
   ex.monitor?.parar();
-  await Promise.all(Object.values(ex.componentes).map((c) => c.instancia.parar().catch(() => {})));
+  await Promise.all(Object.values(ex.componentes).map(async (c) => {
+    const erro = await encerrarComPrazo(c.instancia);
+    if (erro) { c.falhaFatal ||= erro; registrar('erro', erro); }
+  }));
   try { await ex.wakeLock?.release(); } catch { /* já liberado */ }
   let saudeDiscos = null;
   if (ex.monitor && !android) {
@@ -474,11 +537,14 @@ async function finalizar(motivo) {
 
   const componentes = {};
   for (const [id, c] of Object.entries(ex.componentes)) {
-    componentes[id] = { series: c.series, info: c.instancia.info(), falhaFatal: c.falhaFatal };
+    let info = {};
+    try { info = c.instancia.info(); } catch { c.falhaFatal ||= 'Não foi possível obter os detalhes finais desta carga.'; }
+    componentes[id] = { series: c.series, info, falhaFatal: c.falhaFatal };
   }
   execucao = null;
   document.body.classList.remove('rodando');
   $('#btn-parar').disabled = false;
+  $('#btn-parar').textContent = '■ Parar e ver relatório';
   for (const b of document.querySelectorAll('#btn-selecionados, #btn-max')) b.disabled = false;
   $('#aovivo').hidden = true;
   $('#tela-gpu').innerHTML = '';
@@ -500,6 +566,7 @@ async function finalizar(motivo) {
     android,
     sensoresAndroid: android ? ex.monitor?.ultima : null,
     interrupcaoAndroid: ex.interrupcaoAndroid,
+    interrupcaoMovel: ex.interrupcaoMovel,
     compartilhar: ex.compartilhar,
     oculta: ex.oculta,
     saudeDiscos,
@@ -522,8 +589,14 @@ document.addEventListener('click', (e) => {
 $('#btn-max').addEventListener('click', () => pedirInicio(true));
 $('#btn-parar').addEventListener('click', () => finalizar('Parado pelo usuário'));
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && execucao) finalizar('Parado pelo usuário (Esc)'); });
+window.addEventListener('slt:parada-nativa', (e) => {
+  if (!execucao || typeof e.detail !== 'string') return;
+  if (e.detail !== 'Tempo concluído') execucao.interrupcaoAndroid = e.detail;
+  finalizar(e.detail);
+});
 document.addEventListener('visibilitychange', () => {
   if (!execucao) return;
+  if (document.hidden && sistema?.dispositivo.tipo === 'celular') { execucao.oculta = true; finalizar('Celular saiu do primeiro plano; cargas encerradas.'); return; }
   if (document.hidden) execucao.oculta = true;
   registrar('log', document.hidden ? 'Aba escondida: o teste de GPU fica pausado até você voltar.' : 'Aba visível novamente.');
 });
@@ -533,10 +606,14 @@ document.addEventListener('slt:novo-teste', () => {
   $('#configurar').scrollIntoView({ behavior: 'smooth' });
 });
 
-prepararProtecao();
 iniciarRanking();
 mostrarSistema().then(() => {
+  prepararProtecao();
   mostrarPlugin();
+  if (android) {
+    const atualizar = () => { if (!execucao) mostrarEstadoAndroid(sensoresAndroid()); };
+    atualizar(); setInterval(atualizar, 2000);
+  }
   for (const b of document.querySelectorAll('#btn-selecionados, #btn-max')) b.disabled = false;
   const local = ['localhost', '127.0.0.1'].includes(location.hostname);
   if (sistema.so === 'Windows' && (pluginJaUsado() || local)) procurarPlugin();

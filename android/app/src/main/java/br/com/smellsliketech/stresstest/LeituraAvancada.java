@@ -29,18 +29,18 @@ final class LeituraAvancada {
                 if(!p.waitFor(4,TimeUnit.SECONDS)){p.destroyForcibly();throw new IOException("Sem autorização root");}
                 String texto=saida.get(1,TimeUnit.SECONDS);
                 if(p.exitValue()!=0||!texto.contains("SLT_FIM"))throw new IOException("Root indisponível");
-                JSONArray sensores=new JSONArray();Double cpu=null,gpu=null,clockGpu=null;double soma=0;int n=0;
+                JSONArray sensores=new JSONArray();JSONObject fontes=ColetaHardware.obj();Double cpu=null,gpu=null,clockGpu=null;double soma=0;int n=0;
                 for(String linha:texto.split("\\r?\\n")) {
                     String[] c=linha.split("\\|",3);if(c.length!=3)continue;
                     sensores.put(ColetaHardware.obj("categoria",c[0],"sensor",c[1].trim(),"valorBruto",c[2].trim(),"fonte","sysfs via root já instalado"));
                     try {
                         double valor=Double.parseDouble(c[2].trim());
-                        if(c[0].equals("T")&&valor>1000&&valor<150000){double t=valor/1000;String nome=c[1].toLowerCase(java.util.Locale.ROOT);if(nome.contains("cpu"))cpu=cpu==null?t:Math.max(cpu,t);if(nome.contains("gpu"))gpu=gpu==null?t:Math.max(gpu,t);}
+                        if(c[0].equals("T")){Double t=SensoresTermicos.miligraus(c[2]);String tipo=SensoresTermicos.componente(c[1]);if(t!=null&&"cpu".equals(tipo)&&(cpu==null||t>cpu)){cpu=t;fontes.put("cpuTempC",c[1]+" · sysfs/root");}if(t!=null&&"gpu".equals(tipo)&&(gpu==null||t>gpu)){gpu=t;fontes.put("gpuTempC",c[1]+" · sysfs/root");}}
                         if(c[0].equals("C")&&valor>0){soma+=valor/1000;n++;}
                         if(c[0].equals("G")&&valor>0)clockGpu=valor/1e6;
                     }catch(NumberFormatException ignored) { }
                 }
-                return ColetaHardware.obj("estado","Leitura avançada autorizada","leituras",sensores,"cpuTempC",cpu,"gpuTempC",gpu,"cpuClockMHz",n>0?soma/n:null,"gpuClockMHz",clockGpu);
+                return ColetaHardware.obj("estado","Leitura avançada autorizada","leituras",sensores,"fontes",fontes,"cpuTempC",cpu,"gpuTempC",gpu,"cpuClockMHz",n>0?soma/n:null,"gpuClockMHz",clockGpu);
             }finally{leitor.shutdownNow();}
         }catch(Exception e){return ColetaHardware.obj("estado","Não disponível: root ausente, negado ou sem acesso às fontes. O teste normal continua.");}
         finally{if(p!=null)p.destroy();}

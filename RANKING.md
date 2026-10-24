@@ -3,6 +3,13 @@
 Cloudflare Worker `slt-stress-test`, D1 `slt-stress-test-benchmarks`, binding `DB`.
 Frontend continua sem dependências de execução; protocolo de dados e algoritmo são versão 1.
 
+Na versão 1.3.0, GPU usa `webgl2-fence-v2`: a fila fica limitada a um lote e as medições
+contam somente quadros concluídos. Não agrupar com o motor antigo. Os contextos guardam
+o motor da GPU e o perfil de workers da memória, inclusive em testes combinados.
+Padrões móveis menores ficam identificados por threads/resolução/intensidade/quantidade;
+não há redução silenciosa da configuração durante a execução. Interrupções preventivas
+por queda de desempenho continuam fora das médias de testes concluídos.
+
 ## Fluxo
 
 Ao terminar, o relatório consulta o banco. A pessoa pode marcar a contribuição antes de iniciar

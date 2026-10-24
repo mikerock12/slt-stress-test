@@ -1,4 +1,4 @@
-export const DOWNLOAD_APK = '/assets/downloads/SLTStressTest-v1.2.1.apk';
+export const DOWNLOAD_APK = '/assets/downloads/SLTStressTest-v1.3.0.apk';
 export const androidDisponivel = () => typeof globalThis.SLTAndroid?.inventario === 'function';
 export function inventarioAndroid() {
   if (!androidDisponivel()) return null;
@@ -23,7 +23,16 @@ export class TesteAndroid {
     return r.metricas || null;
   }
   info() { return { ...this.detalhes, ...this.ultima?.info, motor: 'android-nativo-v1', falhaFatal: this.falhaFatal }; }
-  async parar() { globalThis.SLTAndroid.parar(this.id); this.amostra(); }
+  async parar() {
+    globalThis.SLTAndroid.parar(this.id);
+    const prazo = performance.now() + 3500;
+    do {
+      this.amostra();
+      if (this.ultima.encerrado !== false) return;
+      await new Promise((ok) => setTimeout(ok, 50));
+    } while (performance.now() < prazo);
+    throw new Error('A carga nativa recebeu a parada, mas ainda não confirmou a liberação dos recursos. Aguarde antes de repetir.');
+  }
 }
 export class MonitorAndroid {
   iniciar() { this.atualizar(); this.relogio = setInterval(() => this.atualizar(), 1000); }

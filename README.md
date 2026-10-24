@@ -5,9 +5,9 @@ Teste de estresse e benchmark de **CPU, GPU, memória e armazenamento**, da
 Windows e ranking comunitário persistente.
 
 **[Abrir o site](https://stresstest.smellsliketech.com.br)** ·
-[Baixar APK Android](https://stresstest.smellsliketech.com.br/assets/downloads/SLTStressTest-v1.2.1.apk) ·
+[Baixar APK Android](https://stresstest.smellsliketech.com.br/assets/downloads/SLTStressTest-v1.3.0.apk) ·
 [Baixar plugin Windows](https://github.com/mikerock12/slt-stress-test/releases/latest/download/SLTStressTestPlugin.exe) ·
-[Release e checksums](https://github.com/mikerock12/slt-stress-test/releases/tag/v1.2.1)
+[Release e checksums](https://github.com/mikerock12/slt-stress-test/releases/tag/v1.3.0)
 
 ## Escolha sua plataforma
 

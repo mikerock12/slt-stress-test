@@ -16,11 +16,12 @@ export class TesteMemoria {
 
   async iniciar(opcoes, aoEvento) {
     const total = Math.max(64 * MIB, (opcoes.mib || 1024) * MIB);
-    const n = Math.min(
+    const n = opcoes.workers === 1 ? Math.max(1, Math.ceil(total / MAX_POR_WORKER)) : Math.min(
       Math.max(2, Math.ceil(total / MAX_POR_WORKER)),
       Math.max(2, navigator.hardwareConcurrency || 4),
     );
     const porWorker = Math.floor(total / n / 4096) * 4096;
+    this.workersUsados = n;
 
     const prontos = [];
     for (let i = 0; i < n; i++) {
@@ -78,7 +79,7 @@ export class TesteMemoria {
   }
 
   info() {
-    return { alocadoMiB: Math.round(this.alocado / MIB), avisos: this.avisos };
+    return { alocadoMiB: Math.round(this.alocado / MIB), workers: this.workersUsados, avisos: this.avisos };
   }
 
   async parar() {

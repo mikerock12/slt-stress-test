@@ -20,7 +20,7 @@ test('CPU com queda forte pede atenção (throttling)', () => {
   const gflops = Array.from({ length: 100 }, (_, i) => (i < 50 ? 30 : 20));
   const a = avaliar('cpu', resumirComponente('cpu', { gflops, erros: estavel(0) }));
   assert.equal(a.status, 'atencao');
-  assert.match(a.motivos.join(' '), /throttling/);
+  assert.match(a.motivos.join(' '), /limite térmico/);
 });
 
 test('GPU com contexto perdido falha', () => {

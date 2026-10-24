@@ -43,6 +43,7 @@ export function analisar(dados) {
       falhaFatal: c.falhaFatal || c.info?.falhaFatal,
       distribuicao: c.info?.distribuicao,
       quedaCpu,
+      movel: dados.sistema?.dispositivo?.tipo === 'celular',
       disparoTemp: dados.protecao?.disparo?.componente === id ? dados.protecao.disparo : null,
       limiteTemp: dados.protecao?.limites?.ativa ? dados.protecao.limites[id] : undefined,
       saudeDisco: fisico?.avaliacao?.estado,
@@ -52,6 +53,9 @@ export function analisar(dados) {
   }
   const avaliacoes = Object.fromEntries(Object.entries(componentes).filter(([id]) => id !== 'pressao').map(([id, c]) => [id, c.avaliacao]));
   const geral = vereditoGeral(avaliacoes);
+  const errosMedidos = Object.values(componentes).some((c) => (c.resumo.erros?.total || 0) > 0 || (c.resumo.artefatos?.total || 0) > 0);
+  const falhaExecucao = !errosMedidos && Object.values(dados.componentes).some((c) => c.falhaFatal || c.info?.falhaFatal);
+  if (geral.status === 'falha' && falhaExecucao) geral.titulo = 'Teste incompleto: falha na execução';
   if (componentes.pressao?.avaliacao.status === 'atencao' && geral.status === 'ok') {
     geral.status = 'atencao';
     geral.titulo = 'Aprovado com ressalvas';
@@ -61,11 +65,15 @@ export function analisar(dados) {
     geral.status = 'atencao';
     geral.titulo = 'Interrompido pela proteção de temperatura';
   }
-  if (dados.interrupcaoAndroid && geral.status !== 'falha') {
+  if (dados.interrupcaoAndroid && !errosMedidos) {
     geral.status = 'atencao';
     geral.titulo = 'Teste interrompido no Android';
   }
-  return { geral, componentes };
+  if (dados.interrupcaoMovel && !errosMedidos) {
+    geral.status = 'atencao';
+    geral.titulo = 'Interrompido pela proteção de carga do celular';
+  }
+  return { geral, componentes, falhaExecucao };
 }
 
 function textoProtecao(p) {
@@ -221,12 +229,12 @@ export function gerarRelatorio(container, dados) {
       <span class="veredito-icone" aria-hidden="true">${{ ok: '✔', atencao: '!', falha: '✖', na: '?' }[geral.status]}</span>
       <div>
         <strong>${esc(geral.titulo)}</strong>
-        <p>${dados.interrupcaoAndroid && geral.status !== 'falha' ? esc(dados.interrupcaoAndroid) : dados.protecao?.disparo && geral.status !== 'falha'
+        <p>${(dados.interrupcaoAndroid || dados.interrupcaoMovel) && geral.status !== 'falha' ? esc(dados.interrupcaoAndroid || dados.interrupcaoMovel) : dados.protecao?.disparo && geral.status !== 'falha'
           ? `O teste parou porque a ${esc(NOMES[dados.protecao.disparo.componente])} passou do limite de ${dados.protecao.disparo.limite} °C que você definiu. Até a parada não houve erros, mas a refrigeração precisa de atenção antes de um teste longo.`
           : {
           ok: 'Nenhum erro de cálculo, de memória, de imagem ou de dados, e o desempenho se manteve. Para este teste, o sistema se comportou como um computador estável.',
           atencao: 'Não houve erros, mas algo merece atenção (geralmente queda de desempenho por calor). Veja os detalhes abaixo.',
-          falha: 'Foram encontrados erros. Um computador estável não erra nesses testes: veja abaixo qual componente falhou e o que fazer.',
+          falha: analise.falhaExecucao ? 'Uma carga não conseguiu concluir ou confirmar a limpeza. Isso não comprova defeito do hardware. Consulte o motivo abaixo e aguarde a liberação dos recursos antes de repetir.' : 'Foram encontrados erros nos dados ou cálculos verificados. Veja abaixo qual componente registrou os erros e o que fazer.',
           na: 'O teste foi curto demais ou não conseguiu medir. Tente de novo com pelo menos 2 minutos.',
         }[geral.status]}</p>
       </div>
@@ -254,12 +262,12 @@ export function gerarRelatorio(container, dados) {
         clock real da GPU e frequência da memória não aparecem aqui</strong> e não foram inventados.
         No lugar, use os sinais indiretos acima:</p>
       <ul>
-        ${temCPU ? '<li><strong>CPU</strong>: se o desempenho FFT ou o clock estimado caíram do início para o fim, a CPU provavelmente reduziu o clock por temperatura (thermal throttling).</li>' : ''}
-        ${temGPU ? '<li><strong>GPU</strong>: queda de FPS ao longo do teste indica limite térmico ou de energia.</li>' : ''}
-        <li>Para as temperaturas exatas, deixe o <a href="https://github.com/LibreHardwareMonitor/LibreHardwareMonitor" target="_blank" rel="noopener">LibreHardwareMonitor</a>
+        ${temCPU ? '<li><strong>CPU</strong>: queda de desempenho pode indicar limite térmico, de energia ou disputa por recursos. Sem sensor, não confirma temperatura.</li>' : ''}
+        ${temGPU ? '<li><strong>GPU</strong>: queda de FPS também pode decorrer de limite térmico, de energia ou disputa por recursos.</li>' : ''}
+        ${s.dispositivo?.tipo === 'celular' ? '<li>No iPhone, o navegador não oferece temperatura de CPU/GPU. No Android, o APK tenta fontes legíveis sem root; a disponibilidade varia entre fabricantes. Se esquentar, pare e aguarde esfriar, fora do carregador.</li>' : `<li>Para as temperaturas exatas, deixe o <a href="https://github.com/LibreHardwareMonitor/LibreHardwareMonitor" target="_blank" rel="noopener">LibreHardwareMonitor</a>
           ou o <a href="https://www.hwinfo.com/" target="_blank" rel="noopener">HWiNFO</a> aberto durante o teste e anote os máximos.
           Para a saúde do disco, use o <a href="https://crystalmark.info/en/software/crystaldiskinfo/" target="_blank" rel="noopener">CrystalDiskInfo</a>.</li>
-        <li>Ou baixe o <a href="${DOWNLOAD}">SLT Stress Test Plugin</a> (Windows): com ele, temperatura, clocks reais, frequência da memória e SMART entram neste relatório.</li>
+        <li>Ou baixe o <a href="${DOWNLOAD}">SLT Stress Test Plugin</a> (Windows): com ele, temperatura, clocks reais, frequência da memória e SMART entram neste relatório.</li>`}
       </ul>
     </article>`}
 
@@ -313,7 +321,9 @@ export function gerarRelatorio(container, dados) {
       const a = document.createElement('a');
       a.href = url;
       a.download = `slt-stresstest-${dados.inicio.toISOString().slice(0, 19).replace(/[:T]/g, '-')}.json`;
+      document.body.append(a);
       a.click();
+      a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
   });

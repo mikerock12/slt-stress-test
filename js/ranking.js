@@ -53,7 +53,7 @@ export function prepararBenchmark(dados) {
     const c = dados.componentes[id]; const op = dados.opcoes[id];
     const configuracao = { motor: c.info?.motor || (id === 'disco' && c.info?.modo === 'nativo' ? 'windows-disco-v1' : 'navegador-v1'),
       simultaneos: [...dados.ids].sort().join('+'), duracaoAlvoS: dados.duracaoAlvoS,
-      cpuContexto: JSON.stringify(dados.opcoes.cpu), gpuContexto: JSON.stringify({ resolucao: dados.opcoes.gpu.resolucao, intensidade: dados.opcoes.gpu.intensidade }), memoriaContexto: String(dados.opcoes.memoria.mib) };
+      cpuContexto: JSON.stringify(dados.opcoes.cpu), gpuContexto: JSON.stringify({ resolucao: dados.opcoes.gpu.resolucao, intensidade: dados.opcoes.gpu.intensidade, motor: dados.componentes.gpu?.info?.motor }), memoriaContexto: `${dados.opcoes.memoria.mib} / workers:${dados.opcoes.memoria.workers || 'padrão'}` };
     if (id === 'cpu') configuracao.threads = c.info?.threads || op.threads;
     if (id === 'gpu') Object.assign(configuracao, { largura: op.resolucao[0], altura: op.resolucao[1], intensidade: op.intensidade });
     if (id === 'memoria') Object.assign(configuracao, { mib: op.mib, alocadoMiB: c.info?.alocadoMiB || op.mib });
