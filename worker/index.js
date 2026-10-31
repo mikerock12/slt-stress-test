@@ -1,5 +1,5 @@
-import { validarBenchmark, chaveGrupo, comparar, MIN_CONTRIBUINTES } from '../js/benchmark.js';
-import { METRICAS } from '../js/avaliacao.js';
+import { validarBenchmark, chaveGrupo, comparar, principalRanking, MIN_CONTRIBUINTES } from '../js/benchmark.js';
+import { metricasParaVersao } from '../js/avaliacao.js';
 import { consentimentoValido, VERSAO_PRIVACIDADE } from '../js/privacidade.js';
 import { atenderPrivacidade, expirarDados } from './privacidade.js';
 
@@ -8,9 +8,9 @@ const LIMITE = 1500000;
 const json = (dados, status = 200) => Response.json(dados, { status, headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'", 'Referrer-Policy': 'no-referrer' } });
 const autorizado = (alias) => `EXISTS (SELECT 1 FROM benchmarks b WHERE b.id = ${alias}.benchmark_id AND b.consentimento_versao IS NOT NULL)`;
 const recentes = `r.elegivel = 1 AND ${autorizado('r')} AND NOT EXISTS (SELECT 1 FROM resultados n WHERE n.grupo = r.grupo AND n.contribuinte = r.contribuinte AND n.elegivel = 1 AND ${autorizado('n')} AND (n.criado > r.criado OR (n.criado = r.criado AND n.benchmark_id > r.benchmark_id)))`;
-const medidas = (id) => METRICAS[id].filter((m) => m.tipo === 'media');
-const colunasMedias = (id) => medidas(id).map((m) => `AVG(json_extract(r.resumo, '$.${m.chave}.media')) m_${m.chave}, COUNT(json_extract(r.resumo, '$.${m.chave}.media')) n_${m.chave}`).join(', ');
-const mediasPublicas = (id, r) => Object.fromEntries(medidas(id).map((m) => [m.chave, { media: r[`m_${m.chave}`] ?? null, n: r[`n_${m.chave}`] || 0 }]));
+const medidas = (id, versao) => metricasParaVersao(versao)[id].filter((m) => m.tipo === 'media');
+const colunasMedias = (id, versao) => medidas(id, versao).map((m) => `AVG(json_extract(r.resumo, '$.${m.chave}.media')) m_${m.chave}, COUNT(json_extract(r.resumo, '$.${m.chave}.media')) n_${m.chave}`).join(', ');
+const mediasPublicas = (id, versao, r) => Object.fromEntries(medidas(id, versao).map((m) => [m.chave, { media: r[`m_${m.chave}`] ?? null, n: r[`n_${m.chave}`] || 0 }]));
 async function hash(s) {
   return [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)))].map((n) => n.toString(16).padStart(2, '0')).join('');
 }
@@ -56,18 +56,19 @@ export async function api(req, env) {
     const contribuinte = await hash(dados.contribuinte);
     // O identificador aleatório é transformado em hash e nunca é público.
     delete dados.contribuinte;
+    for (const id of dados.ids) delete dados.componentes[id].tempos;
     const grupos = {};
     for (const id of dados.ids) grupos[id] = await hash(chaveGrupo(dados, id));
     const comparacoes = {};
     for (const id of dados.ids) {
       const c = dados.componentes[id];
-      const ref = await env.DB.prepare(`SELECT COUNT(*) n, AVG(r.pontuacao) media, ${colunasMedias(id)} FROM resultados r WHERE r.grupo = ? AND r.contribuinte <> ? AND ${recentes}`).bind(grupos[id], contribuinte).first();
-      comparacoes[id] = c.elegivel ? comparar(c.pontuacao, ref?.media, ref?.n || 0) : { estado: 'inelegivel', mensagem: 'Sem comparação: ambiente emulado, teste interrompido, curto, com erros, sem medições suficientes ou sem identificação exata do hardware.' };
-      if (c.elegivel) comparacoes[id].metricas = Object.fromEntries(Object.entries(mediasPublicas(id, ref || {})).map(([k, r]) => [k, { ...r, valor: c.resumo[k]?.media, suficiente: r.n >= MIN_CONTRIBUINTES }]));
+      const ref = await env.DB.prepare(`SELECT COUNT(*) n, AVG(r.pontuacao) media, ${colunasMedias(id, dados.versao)} FROM resultados r WHERE r.grupo = ? AND r.contribuinte <> ? AND ${recentes}`).bind(grupos[id], contribuinte).first();
+      comparacoes[id] = c.elegivel ? comparar(c.pontuacao, ref?.media, ref?.n || 0) : { estado: 'inelegivel', mensagem: 'Sem comparação: o teste não atendeu aos critérios de conclusão, cobertura, identificação ou ausência de erros.', motivos: c.motivosInelegibilidade };
+      if (c.elegivel) comparacoes[id].metricas = Object.fromEntries(Object.entries(mediasPublicas(id, dados.versao, ref || {})).map(([k, r]) => [k, { ...r, valor: c.resumo[k]?.media, suficiente: r.n >= MIN_CONTRIBUINTES }]));
     }
     if (url.pathname === '/api/comparar') {
       for (const c of Object.values(comparacoes)) if (c.estado === 'insuficiente') c.mensagem = 'Ainda não temos informação suficiente sobre hardware igual nesta configuração. Você pode contribuir para ampliar o banco de testes.';
-      return json({ comparacoes, salvo: false });
+      return json({ versao: dados.versao, comparacoes, salvo: false });
     }
     const existente = await env.DB.prepare('SELECT contribuinte FROM benchmarks WHERE id = ?').bind(dados.id).first();
     if (await env.DB.prepare('SELECT contribuinte FROM revogacoes WHERE contribuinte = ?').bind(contribuinte).first()) return json({ erro: 'Chave revogada. Recarregue a página antes de uma nova contribuição.' }, 409);
@@ -94,13 +95,18 @@ export async function api(req, env) {
   if (url.pathname === '/api/ranking') {
     const componente = url.searchParams.get('componente') || 'cpu';
     if (!['cpu', 'gpu', 'memoria', 'disco'].includes(componente)) return json({ erro: 'Componente inválido.' }, 400);
-    const params = [componente]; const filtros = ['r.componente = ?'];
+    const versao = Number(url.searchParams.get('versao') || '1');
+    if (![1, 2].includes(versao)) return json({ erro: 'Versão de metodologia inválida.' }, 400);
+    const params = [componente, versao];
+    const filtros = ['r.componente = ?', "json_extract(b.dados, '$.versao') = ?"];
     for (const k of ['tipo', 'marca', 'modelo']) if (url.searchParams.get(k)?.trim()) { filtros.push(`r.${k} = ? COLLATE NOCASE`); params.push(url.searchParams.get(k).trim().slice(0, 240)); }
     const freq = url.searchParams.get('frequencia');
     if (freq) { if (!(Number(freq) > 0)) return json({ erro: 'Frequência inválida.' }, 400); filtros.push('r.frequencia = ?'); params.push(Number(freq)); }
     const pagina = Math.max(0, Math.min(1000, Number.parseInt(url.searchParams.get('pagina') || '0', 10) || 0));
-    const { results } = await env.DB.prepare(`SELECT r.grupo, r.hardware, r.configuracao, COUNT(*) contribuicoes, AVG(r.pontuacao) media, MIN(r.pontuacao) minimo, MAX(r.pontuacao) maximo, ${colunasMedias(componente)} FROM resultados r WHERE ${filtros.join(' AND ')} AND ${recentes} GROUP BY r.grupo ORDER BY media DESC, r.grupo LIMIT 50 OFFSET ?`).bind(...params, pagina * 50).all();
-    return json({ componente, pagina, minimoContribuintes: MIN_CONTRIBUINTES, resultados: results.map((r) => ({ grupo: r.grupo, contribuicoes: r.contribuicoes, media: r.media, minimo: r.minimo, maximo: r.maximo, metricas: mediasPublicas(componente, r), hardware: JSON.parse(r.hardware), configuracao: JSON.parse(r.configuracao), suficiente: r.contribuicoes >= MIN_CONTRIBUINTES })), aviso: 'Resultados da comunidade, sem certificação. Cada identificador anônimo contribui com seu último teste elegível por configuração; compare configurações iguais.' });
+    const { results } = await env.DB.prepare(`SELECT r.grupo, r.hardware, r.configuracao, COUNT(*) contribuicoes, AVG(r.pontuacao) media, MIN(r.pontuacao) minimo, MAX(r.pontuacao) maximo, ${colunasMedias(componente, versao)} FROM resultados r JOIN benchmarks b ON b.id = r.benchmark_id WHERE ${filtros.join(' AND ')} AND ${recentes} GROUP BY r.grupo ORDER BY media DESC, r.grupo LIMIT 50 OFFSET ?`).bind(...params, pagina * 50).all();
+    return json({ componente, versao, metricaPrincipal: principalRanking(versao, componente), pagina, minimoContribuintes: MIN_CONTRIBUINTES,
+      resultados: results.map((r) => ({ grupo: r.grupo, contribuicoes: r.contribuicoes, media: r.media, minimo: r.minimo, maximo: r.maximo, metricas: mediasPublicas(componente, versao, r), hardware: JSON.parse(r.hardware), configuracao: JSON.parse(r.configuracao), suficiente: r.contribuicoes >= MIN_CONTRIBUINTES })),
+      aviso: 'Resultados da comunidade, sem certificação. Cada identificador pseudônimo contribui com seu último teste elegível por configuração; metodologias v1 e v2 nunca compartilham grupos.' });
   }
   const detalhe = url.pathname.match(/^\/api\/benchmarks\/([a-f0-9-]{36})$/i);
   if (detalhe) {

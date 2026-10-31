@@ -49,7 +49,7 @@ export class TesteDiscoPlugin {
   amostra() {
     const e = this.estado;
     if (!e) return null;
-    const saida = { erros: e.erros || 0 };
+    const saida = { erros: e.erros || 0, ciclos: e.ciclo || 0 };
     const chave = MAPA[e.fase];
     if (chave && Number.isFinite(e.atualMBs) && e.atualMBs > 0) {
       saida[chave] = e.atualMBs;

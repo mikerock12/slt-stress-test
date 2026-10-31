@@ -46,7 +46,7 @@ export class TesteDisco {
 
   amostra() {
     // Só entra na média o que foi medido neste segundo (cada fase mede um tipo de acesso).
-    const novos = { ...this.ultimos, erros: this.erros };
+    const novos = { ...this.ultimos, erros: this.erros, ciclos: this.ciclos };
     this.ultimos = {};
     return novos;
   }

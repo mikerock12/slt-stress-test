@@ -52,3 +52,74 @@ test('detalhes preservam as oito fases de disco sem aceitar caminhos ou logs', (
   const e = exemplo();e.componentes.cpu.detalhes={arquivoMiB:256,resultados:{seq1mq8Leitura:{mbs:123,iops:456,caminho:'SEGREDO'}}};
   const d=validarBenchmark(e);assert.equal(d.componentes.cpu.detalhes.resultados.seq1mq8Leitura.mbs,123);assert.ok(!JSON.stringify(d).includes('SEGREDO'));
 });
+
+function gpuV1() {
+  const e = exemplo();
+  e.ids = ['gpu'];
+  e.componentes = { gpu: { hardware: { marca: 'ARM', modelo: 'Mali-G720 MC7' },
+    configuracao: { motor: 'webgl2-fence-v2', largura: 640, altura: 360, intensidade: 64, simultaneos: 'gpu', duracaoAlvoS: 120 },
+    series: { fps: Array(120).fill(60), artefatos: [0] } } };
+  return e;
+}
+function gpuV2() {
+  const e = gpuV1();
+  e.versao = 2; e.perfil = 'rapido';
+  const gpu = e.componentes.gpu;
+  gpu.configuracao.motor = 'webgl2-fence-v3';
+  gpu.series = { passadasPorSegundo: Array(120).fill(60), divergenciasReferencia: [0] };
+  gpu.tempos = { passadasPorSegundo: Array.from({ length: 120 }, (_, i) => i + 1), divergenciasReferencia: [1] };
+  return e;
+}
+
+test('benchmark v1 fps e v2 passadasPorSegundo ficam em grupos isolados', () => {
+  const v1 = validarBenchmark(gpuV1());
+  const v2 = validarBenchmark(gpuV2());
+  assert.equal(v1.componentes.gpu.pontuacao, 60);
+  assert.equal(v2.componentes.gpu.pontuacao, 60);
+  assert.equal(v2.componentes.gpu.elegivel, true);
+  assert.equal(v2.componentes.gpu.qualidade.tempoUtilS, 120);
+  assert.equal(v2.componentes.gpu.qualidade.cobertura, 1);
+  assert.notEqual(chaveGrupo(v1, 'gpu'), chaveGrupo(v2, 'gpu'));
+});
+
+test('v2 exige timestamps e recusa cobertura insuficiente na elegibilidade', () => {
+  const semTempos = gpuV2(); delete semTempos.componentes.gpu.tempos;
+  assert.throws(() => validarBenchmark(semTempos), /Timestamps/);
+  const lacunas = gpuV2();
+  lacunas.duracaoS = 1191;
+  lacunas.componentes.gpu.tempos.passadasPorSegundo = Array.from({ length: 120 }, (_, i) => i * 10 + 1);
+  const d = validarBenchmark(lacunas);
+  assert.equal(d.componentes.gpu.elegivel, false);
+  assert.ok(d.componentes.gpu.motivosInelegibilidade.includes('cobertura_ou_tempo_util_insuficiente'));
+  const inconsistente = gpuV2();
+  inconsistente.componentes.gpu.tempos.passadasPorSegundo[119] = 500;
+  assert.throws(() => validarBenchmark(inconsistente), /excedem a duração/);
+});
+
+test('MAX v2 com CPU válida e GPU sem dados não publica nenhum componente como concluído', () => {
+  const e = gpuV2();
+  e.ids = ['cpu', 'gpu'];
+  e.componentes.cpu = exemplo().componentes.cpu;
+  e.componentes.cpu.tempos = { gflops: Array.from({ length: 120 }, (_, i) => i + 1), erros: [1] };
+  assert.equal(validarBenchmark(e).componentes.cpu.elegivel, true);
+  assert.equal(validarBenchmark(e).componentes.gpu.elegivel, true);
+  e.componentes.gpu.series.passadasPorSegundo = [];
+  e.componentes.gpu.tempos.passadasPorSegundo = [];
+  const d = validarBenchmark(e);
+  assert.equal(d.componentes.gpu.elegivel, false);
+  assert.equal(d.componentes.cpu.elegivel, false);
+  assert.ok(d.componentes.cpu.motivosInelegibilidade.includes('componente_selecionado_inconclusivo'));
+});
+
+test('disco v2 aceita fases esparsas com ciclos e acompanhamento completo', () => {
+  const e = gpuV2(); e.ids = ['disco'];
+  e.componentes = { disco: { hardware: { marca: 'Lexar', modelo: 'SSD 240 GB', tipo: 'SSD' },
+    configuracao: { motor: 'navegador-v1', mib: 1024, simultaneos: 'disco', duracaoAlvoS: 120 },
+    series: { seqLeitura: Array(30).fill(500), seqEscrita: Array(30).fill(250), erros: Array(120).fill(0), ciclos: [7] },
+    tempos: { seqLeitura: Array.from({ length: 30 }, (_, i) => (i + 1) * 4), seqEscrita: Array.from({ length: 30 }, (_, i) => (i + 1) * 4), erros: Array.from({ length: 120 }, (_, i) => i + 1), ciclos: [120] },
+    detalhes: { ciclos: 7 } } };
+  const d = validarBenchmark(e);
+  assert.equal(d.componentes.disco.elegivel, true);
+  assert.equal(d.componentes.disco.qualidade.amostrasValidas, 30);
+  assert.equal(d.componentes.disco.qualidade.cobertura, 1);
+});

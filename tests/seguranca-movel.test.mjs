@@ -11,7 +11,7 @@ test('celular interrompe queda persistente, sem tratar os números como temperat
   for (let s = 1; s <= 45; s++) { disparo = p.verificar(s, { cpu: s < 25 ? 4 : 0.5 }); if (disparo) break; }
   assert.equal(disparo.componente, 'cpu'); assert.ok(disparo.queda > 80);
   const a = avaliar('cpu', resumirComponente('cpu', { gflops: Array.from({ length: 100 }, (_, i) => i < 50 ? 4 : 0.5) }), { movel: true });
-  assert.match(a.motivos.join(' '), /Sem sensor não é possível confirmar/);
+  assert.match(a.motivos.join(' '), /Sem sensor correspondente não é possível confirmar/);
   assert.doesNotMatch(a.motivos.join(' '), /pasta térmica|cooler/);
 });
 
@@ -42,7 +42,7 @@ test('guarda/limpeza sem confirmação não é reprovação de hardware; erro me
   dados.componentes.cpu.series.erros = [1];
   assert.equal(analisar(dados).geral.status, 'falha');
   dados.componentes.cpu.series.erros = [0]; delete dados.interrupcaoAndroid;
-  assert.equal(analisar(dados).geral.titulo, 'Teste incompleto: falha na execução');
+  assert.equal(analisar(dados).geral.titulo, 'Teste inconclusivo: falha na execução');
 });
 
 test('bridge Android devolve a parada antes da limpeza e consulta a confirmação', async (t) => {

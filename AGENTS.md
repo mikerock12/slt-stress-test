@@ -32,8 +32,8 @@ Worker com D1 para benchmarks; APK Android com interface embarcada e cargas Java
 | `css/style.css` | Tema escuro da marca (tokens em `:root`) |
 | `js/app.js` | Orquestrador: seleção, cronômetro, amostragem a cada 1 s, wake lock, UI ao vivo |
 | `js/sistema.js` | Informações do sistema que o navegador expõe |
-| `js/metricas.js` | Estatística pura (média, mín, máx, CV, queda início→fim). Testada |
-| `js/avaliacao.js` | Veredito por componente (aprovado/atenção/falhou). Testada |
+| `js/metricas.js` | Estatística pura com timestamps, percentis, cobertura, tempo útil e quedas. Testada |
+| `js/avaliacao.js` | Execução, diagnóstico e veredito por componente com cobertura. Testada |
 | `js/relatorio.js` | Monta o relatório HTML, exporta JSON e imprime/PDF |
 | `js/graficos.js` | Sparklines e gráficos em canvas (sem biblioteca) |
 | `js/testes/*.js` | Um módulo por teste: `cpu`, `gpu`, `memoria`, `disco`, `pressao` |
@@ -121,6 +121,17 @@ MAX STRESS de 2 min, conferir o relatório, a impressão em PDF e o JSON exporta
   `stresstest.smellsliketech.com.br` é um custom domain do Worker, criado pelo próprio deploy;
   a zona smellsliketech.com.br usa nameservers do Cloudflare, então o Registro.br não muda.
 - Repositório público no GitHub; backup em `G:/Meu Drive/Backups/Smells Like Tech - Stress Test/`.
+
+## Trabalho atual (30/10/2026)
+
+Etapa web/API do plano v1.4.0 na branch `feat/medicoes-v2-web`, com os arquivos compartilhados
+reservados em `contexto.md`. GPU v3 separa passadas, lotes, RAF e tempo medido; estatística temporal,
+vereditos por cobertura, JSON auditável e ranking v2 isolado do v1. Timestamps brutos não são
+persistidos no D1. Baseline e estado novo: build/lint Android, build/dry-run do site e 74 testes
+verdes. GPU e MAX por 2 min no Chrome terminaram sem erros; relatório, cobertura, ciclos e JSON v2
+foram conferidos sem persistir testes. APK 1.3.1/code 5 teve build/lint, mesma assinatura e smoke
+debug no Android 16. Plugin 1.2.0, PawnIO e motores nativos não foram alterados. PDF automatizado
+está bloqueado pela ferramenta; Firefox e aparelhos físicos continuam pendentes. T04–T08 ficam para depois.
 
 ## Última correção web (24/10/2026)
 

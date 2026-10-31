@@ -1,5 +1,5 @@
-import { VERSAO_BENCHMARK, PRINCIPAL_RANKING, chaveGrupo } from './benchmark.js';
-import { METRICAS, NOMES } from './avaliacao.js';
+import { VERSAO_BENCHMARK, principalRanking, chaveGrupo } from './benchmark.js';
+import { NOMES, metricasParaVersao } from './avaliacao.js';
 import { formatarNumero } from './metricas.js';
 import { consentimentoRanking } from './privacidade.js';
 
@@ -10,22 +10,30 @@ const descreverConfig = (c) => [
   `Carga: ${c.simultaneos}`, c.duracaoAlvoS ? `Duração: ${c.duracaoAlvoS} s` : 'Duração: indefinida',
   c.threads ? `${c.threads} threads` : null, c.largura ? `${c.largura} × ${c.altura}, intensidade ${c.intensidade}` : null,
   c.mib ? `Solicitado: ${c.mib} MiB` : null, c.alocadoMiB ? `Alocado: ${c.alocadoMiB} MiB` : null,
+  c.politicaCache ? `Cache: ${c.politicaCache}` : null, c.sincronizacao ? `Sincronização: ${c.sincronizacao}` : null,
+  c.qd ? `QD=${c.qd}` : null, c.qualidadeMetodo ? `Qualidade: ${c.qualidadeMetodo}` : null,
 ].filter(Boolean).map(esc).join(' · ');
-function tabelaReferencia(id, valores, comCliente = false) {
-  return `<details><summary>Médias de todas as métricas</summary><div class="tabela-rolagem"><table><thead><tr><th>Métrica</th>${comCliente ? '<th>Seu teste</th>' : ''}<th>Comunidade</th><th>Contribuintes</th></tr></thead><tbody>${METRICAS[id].filter((m)=>valores?.[m.chave]?.n || valores?.[m.chave]?.valor!==null && valores?.[m.chave]?.valor!==undefined).map((m)=>{const r=valores[m.chave];return `<tr><th>${esc(m.rotulo)}</th>${comCliente ? `<td>${formatarNumero(r.valor,m.casas)} ${esc(m.unidade)}</td>` : ''}<td>${r.n>=5 ? `${formatarNumero(r.media,m.casas)} ${esc(m.unidade)}` : 'Informação insuficiente'}</td><td>${r.n}</td></tr>`;}).join('')}</tbody></table></div></details>`;
+
+function tabelaReferencia(id, valores, comCliente = false, versao = 2) {
+  const metricas = metricasParaVersao(versao)[id];
+  return `<details><summary>Médias de todas as métricas</summary><div class="tabela-rolagem"><table><thead><tr><th>Métrica</th>${comCliente ? '<th>Seu teste</th>' : ''}<th>Comunidade</th><th>Contribuintes</th></tr></thead><tbody>${metricas.filter((m) => valores?.[m.chave]?.n || valores?.[m.chave]?.valor !== null && valores?.[m.chave]?.valor !== undefined).map((m) => {
+    const r = valores[m.chave];
+    return `<tr><th>${esc(m.rotulo)}</th>${comCliente ? `<td>${formatarNumero(r.valor, m.casas)} ${esc(m.unidade)}</td>` : ''}<td>${r.n >= 5 ? `${formatarNumero(r.media, m.casas)} ${esc(m.unidade)}` : 'Informação insuficiente'}</td><td>${r.n}</td></tr>`;
+  }).join('')}</tbody></table></div></details>`;
 }
+
 let contribuinteMemoria = null;
 function contribuinte(salvar = false) {
   try {
     let id = localStorage.getItem('slt-contribuinte');
     if (!id) {
       id = contribuinteMemoria ||= crypto.randomUUID();
-      // Comparar sem contribuir não cria identificador persistente novo.
       if (salvar) { localStorage.setItem('slt-contribuinte', id); contribuinteMemoria = null; }
     }
     return id;
   } catch { return contribuinteMemoria ||= crypto.randomUUID(); }
 }
+
 export function prepararBenchmark(dados) {
   const p = dados.inventario || {};
   const a = dados.android || {};
@@ -50,43 +58,60 @@ export function prepararBenchmark(dados) {
   };
   const componentes = {};
   for (const id of dados.ids) {
-    const c = dados.componentes[id]; const op = dados.opcoes[id];
+    const c = dados.componentes[id];
+    const op = dados.opcoes[id];
     const configuracao = { motor: c.info?.motor || (id === 'disco' && c.info?.modo === 'nativo' ? 'windows-disco-v1' : 'navegador-v1'),
       simultaneos: [...dados.ids].sort().join('+'), duracaoAlvoS: dados.duracaoAlvoS,
-      cpuContexto: JSON.stringify(dados.opcoes.cpu), gpuContexto: JSON.stringify({ resolucao: dados.opcoes.gpu.resolucao, intensidade: dados.opcoes.gpu.intensidade, motor: dados.componentes.gpu?.info?.motor }), memoriaContexto: `${dados.opcoes.memoria.mib} / workers:${dados.opcoes.memoria.workers || 'padrão'}` };
+      cpuContexto: JSON.stringify(dados.opcoes.cpu), gpuContexto: JSON.stringify({ resolucao: dados.opcoes.gpu.resolucao, intensidade: dados.opcoes.gpu.intensidade, motor: dados.componentes.gpu?.info?.motor }),
+      memoriaContexto: `${dados.opcoes.memoria.mib} / workers:${dados.opcoes.memoria.workers || 'padrão'}` };
     if (id === 'cpu') configuracao.threads = c.info?.threads || op.threads;
     if (id === 'gpu') Object.assign(configuracao, { largura: op.resolucao[0], altura: op.resolucao[1], intensidade: op.intensidade });
     if (id === 'memoria') Object.assign(configuracao, { mib: op.mib, alocadoMiB: c.info?.alocadoMiB || op.mib });
-    if (id === 'disco') configuracao.mib = op.mib;
-    componentes[id] = { hardware: hardware[id], configuracao, series: c.series, detalhes: c.info, falha: !!(c.falhaFatal || c.info?.falhaFatal) };
+    if (id === 'disco') {
+      configuracao.mib = op.mib;
+      configuracao.politicaCache = configuracao.motor === 'windows-disco-v1' ? 'sem-cache-windows' : 'possivel';
+      configuracao.sincronizacao = configuracao.motor === 'windows-disco-v1' ? 'sincronizado-sem-cache' : configuracao.motor === 'android-nativo-v1' ? 'force-por-escrita' : 'nao-determinado-pela-api';
+      if (configuracao.motor !== 'windows-disco-v1') configuracao.qd = 1;
+    }
+    componentes[id] = { hardware: hardware[id], configuracao, series: c.series, tempos: c.tempos || {}, detalhes: c.info, falha: !!(c.falhaFatal || c.info?.falhaFatal) };
   }
   return { versao: VERSAO_BENCHMARK, id: crypto.randomUUID(), contribuinte: contribuinte(), ids: dados.ids,
-    duracaoS: dados.duracaoS, concluido: dados.motivo === 'Tempo concluído' && !dados.protecao?.disparo && !dados.oculta && !dados.eventos?.some((e) => e.tipo === 'erro'),
+    perfil: dados.perfil || 'personalizado', duracaoS: dados.duracaoS,
+    concluido: dados.motivo === 'Tempo concluído' && (!dados.duracaoAlvoS || dados.duracaoS >= dados.duracaoAlvoS - 5) && !dados.protecao?.disparo && !dados.oculta && !dados.interrupcaoAndroid && !dados.interrupcaoMovel && !dados.eventos?.some((e) => e.tipo === 'erro'),
     sistema: { tipo: s.dispositivo?.tipo, emulado: dados.android?.emulado === true, so: s.so, navegador: s.navegador, threads: s.threads,
       energia: s.bateria ? s.bateria.carregando ? 'tomada' : 'bateria' : 'não disponível', aparelho: a.modelo ? `${a.marca} ${a.modelo}` : null }, componentes };
 }
+
 async function pedir(url, corpo) {
   const r = await fetch(url, { method: corpo ? 'POST' : 'GET', headers: corpo ? { 'Content-Type': 'application/json' } : {}, body: corpo ? JSON.stringify(corpo) : undefined, signal: AbortSignal.timeout(20000) });
   const d = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(d.erro || 'Serviço de ranking indisponível.');
   return d;
 }
+
 export function integrarComparacao(container, dados) {
-  const caixa = document.createElement('article'); caixa.className = 'cartao comparacao'; caixa.setAttribute('aria-live', 'polite');
+  const caixa = document.createElement('article');
+  caixa.className = 'cartao comparacao';
+  caixa.setAttribute('aria-live', 'polite');
   container.querySelector('.grade-relatorio').after(caixa);
   let pacote;
   try { pacote = prepararBenchmark(dados); } catch { caixa.textContent = 'Não foi possível preparar a comparação. O relatório local continua disponível.'; return; }
   let enviando = false;
   const enviar = async (salvar) => {
-    if (enviando) return; enviando = true;
+    if (enviando) return;
+    enviando = true;
     caixa.innerHTML = '<h3>Comparação com hardware igual</h3><p>Consultando o banco da comunidade…</p>';
     try {
       if (salvar) { pacote.contribuinte = contribuinte(true); pacote.consentimento = consentimentoRanking(); }
       const r = await pedir(salvar ? '/api/benchmarks' : '/api/comparar', pacote);
       dados.comunidade = r;
-      caixa.innerHTML = `<h3>Comparação com hardware igual</h3><p>${r.salvo ? 'Benchmark salvo. Obrigado pela contribuição!' : 'Comparação sem guardar este teste.'}</p>` +
-        Object.entries(r.comparacoes).map(([id, c]) => `<p><strong>${esc(NOMES[id])}:</strong> ${esc(c.mensagem)}${c.media ? ` Média: ${formatarNumero(c.media, 2)} ${esc(METRICAS[id].find((m) => m.chave === PRINCIPAL_RANKING[id]).unidade)} · diferença ${formatarNumero(c.diferencaPct, 1)}% · ${c.n} contribuintes.` : ''}</p>${c.metricas ? tabelaReferencia(id,c.metricas,true) : ''}`).join('') +
-        `<p class="nota">Mínimo de 5 contribuintes, excluindo os seus resultados. Mesmos modelo, frequência informada, navegador, energia, modo, duração e configuração. “Não disponível” permanece separado de valores conhecidos. Testes interrompidos ou com a aba escondida não entram na média. Dados da comunidade sem certificação.</p>${r.salvo ? `<p>Identificador: <code>${esc(r.id)}</code></p>` : '<button type="button" class="botao" data-contribuir>Contribuir com este teste</button>'}`;
+      caixa.innerHTML = `<h3>Comparação com hardware igual · metodologia v${pacote.versao}</h3><p>${r.salvo ? 'Benchmark salvo. Obrigado pela contribuição!' : 'Comparação sem guardar este teste.'}</p>` +
+        Object.entries(r.comparacoes).map(([id, c]) => {
+          const chave = principalRanking(pacote.versao, id);
+          const metrica = metricasParaVersao(pacote.versao)[id].find((m) => m.chave === chave);
+          return `<p><strong>${esc(NOMES[id])}:</strong> ${esc(c.mensagem)}${c.media ? ` Média: ${formatarNumero(c.media, 2)} ${esc(metrica.unidade)} · diferença ${formatarNumero(c.diferencaPct, 1)}% · ${c.n} contribuintes.` : ''}</p>${c.motivos?.length ? `<p class="nota">Fora da média: ${esc(c.motivos.join(', '))}.</p>` : ''}${c.metricas ? tabelaReferencia(id, c.metricas, true, pacote.versao) : ''}`;
+        }).join('') +
+        `<p class="nota">Mínimo de 5 contribuintes, excluindo os seus resultados. Mesma versão, modelo, frequência informada, navegador, energia, perfil, duração e configuração. Testes sem cobertura, interrompidos ou com a aba escondida não entram na média. Dados da comunidade sem certificação.</p>${r.salvo ? `<p>Identificador: <code>${esc(r.id)}</code></p>` : '<button type="button" class="botao" data-contribuir>Contribuir com este teste</button>'}`;
     } catch (e) {
       caixa.innerHTML = `<h3>Comparação com hardware igual</h3><p>${esc(e.message)} Seu relatório está disponível e nenhum resultado foi confirmado como salvo.</p><button type="button" class="botao" data-repetir>Tentar novamente</button>`;
       caixa.querySelector('[data-repetir]').onclick = () => enviar(salvar);
@@ -101,38 +126,43 @@ export function integrarComparacao(container, dados) {
 function rSalvo(dados) { return dados.comunidade?.salvo === true; }
 
 export function iniciarRanking() {
-  const form = document.querySelector('#ranking-filtros'); if (!form) return;
-  let pagina = 0; let selecao = [];
+  const form = document.querySelector('#ranking-filtros');
+  if (!form) return;
+  let pagina = 0;
   const saida = document.querySelector('#ranking-resultados');
   async function carregar() {
     saida.textContent = 'Carregando ranking…';
-    const params = new URLSearchParams(new FormData(form)); params.set('pagina', pagina);
+    const params = new URLSearchParams(new FormData(form));
+    params.set('pagina', pagina);
     try {
       const d = await pedir(`/api/ranking?${params}`);
-      const unidade = METRICAS[d.componente].find((m) => m.chave === PRINCIPAL_RANKING[d.componente]).unidade;
-      saida.innerHTML = `<p class="nota">${esc(d.aviso)} Cada linha representa uma configuração; linhas com métodos diferentes não formam uma classificação direta.</p>` +
-        (d.resultados.length ? `<div class="tabela-rolagem"><table><thead><tr><th>Hardware</th><th>Frequência</th><th>Média / mín. / máx.</th><th>Contribuintes</th><th>Configuração</th></tr></thead><tbody>${d.resultados.map((r) => `<tr><td>${esc(r.hardware.marca || 'Marca não disponível')}<br><strong>${esc(r.hardware.modelo)}</strong><br>${esc(r.hardware.tipo)}</td><td>${r.hardware.frequencia ? `${formatarNumero(r.hardware.frequencia, 0)} ${esc(r.hardware.unidadeFrequencia)}` : 'não disponível'}</td><td>${[r.media, r.minimo, r.maximo].map((n) => formatarNumero(n, 2)).join(' / ')} ${esc(unidade)}</td><td>${r.contribuicoes}${r.suficiente ? '' : '<br>Informação insuficiente'}</td><td><details><summary>Ver configuração</summary><pre>${descreverConfig(r.configuracao)}</pre></details>${tabelaReferencia(d.componente,r.metricas)}</td></tr>`).join('')}</tbody></table></div>` : '<p>Ainda não temos informação suficiente. Obrigado por ajudar a construir o banco de testes!</p>');
+      const versao = d.versao;
+      const metrica = metricasParaVersao(versao)[d.componente].find((m) => m.chave === principalRanking(versao, d.componente));
+      saida.innerHTML = `<p class="nota">Metodologia v${versao} · ${esc(metrica.rotulo)} (${esc(metrica.unidade)}). ${esc(d.aviso)} Cada linha representa uma configuração; linhas com métodos diferentes não formam uma classificação direta.</p>` +
+        (d.resultados.length ? `<div class="tabela-rolagem"><table><thead><tr><th>Hardware</th><th>Frequência</th><th>Média / mín. / máx.</th><th>Contribuintes</th><th>Configuração</th></tr></thead><tbody>${d.resultados.map((r) => `<tr><td>${esc(r.hardware.marca || 'Marca não disponível')}<br><strong>${esc(r.hardware.modelo)}</strong><br>${esc(r.hardware.tipo)}</td><td>${r.hardware.frequencia ? `${formatarNumero(r.hardware.frequencia, 0)} ${esc(r.hardware.unidadeFrequencia)}` : 'não disponível'}</td><td>${[r.media, r.minimo, r.maximo].map((n) => formatarNumero(n, 2)).join(' / ')} ${esc(metrica.unidade)}</td><td>${r.contribuicoes}${r.suficiente ? '' : '<br>Informação insuficiente'}</td><td><details><summary>Ver configuração</summary><pre>${descreverConfig(r.configuracao)}</pre></details>${tabelaReferencia(d.componente, r.metricas, false, versao)}</td></tr>`).join('')}</tbody></table></div>` : '<p>Ainda não temos informação suficiente nesta metodologia. A metodologia anterior continua disponível no filtro de versão.</p>');
       document.querySelector('#ranking-anterior').disabled = pagina === 0;
       document.querySelector('#ranking-proximo').disabled = d.resultados.length < 50;
     } catch (e) { saida.textContent = e.message; }
   }
   form.onsubmit = (e) => { e.preventDefault(); pagina = 0; carregar(); };
+  form.querySelector('[name=versao]').onchange = () => { pagina = 0; carregar(); };
   document.querySelector('#ranking-anterior').onclick = () => { pagina = Math.max(0, pagina - 1); carregar(); };
   document.querySelector('#ranking-proximo').onclick = () => { pagina++; carregar(); };
   document.querySelector('#comparar-ids').onsubmit = async (e) => {
-    e.preventDefault(); const alvo = document.querySelector('#comparar-resultados');
+    e.preventDefault();
+    const alvo = document.querySelector('#comparar-resultados');
     const ids = [...new FormData(e.target).values()];
     if (ids.some((id) => !/^[a-f0-9-]{36}$/i.test(id))) { alvo.textContent = 'Informe dois identificadores de benchmark válidos.'; return; }
     alvo.textContent = 'Carregando testes…';
     try {
-      selecao = await Promise.all(ids.map((id) => pedir(`/api/benchmarks/${id}`)));
+      const selecao = await Promise.all(ids.map((id) => pedir(`/api/benchmarks/${id}`)));
       const todos = [...new Set(selecao.flatMap((d) => d.ids))];
-      alvo.innerHTML = `<p>Resultados completos dos testes. Compare métodos e configurações equivalentes.</p><div class="grade-dupla">${selecao.map((d) => `<article class="cartao"><h3>${esc(d.sistema.aparelho || d.sistema.so)}</h3><p>${esc(d.id)} · ${formatarNumero(d.duracaoS, 0)} s · ${esc(d.sistema.navegador)}</p>${d.ids.map((id) => { const c=d.componentes[id];return `<h4>${esc(NOMES[id])} · ${esc(c.hardware.modelo || 'não disponível')}</h4><p>${esc(c.hardware.marca || 'Marca não disponível')} · ${c.hardware.frequencia ? `${formatarNumero(c.hardware.frequencia,0)} ${esc(c.hardware.unidadeFrequencia)}` : 'Frequência não disponível'}</p><p class="nota">${descreverConfig(c.configuracao)}</p>`; }).join('')}</article>`).join('')}</div>` + todos.map((id) => {
-        const igual=selecao.every((d)=>d.componentes[id]) && chaveGrupo(selecao[0],id)===chaveGrupo(selecao[1],id);
-        return `<article class="cartao"><h3>${esc(NOMES[id])}</h3><p class="nota">${igual ? 'Hardware e configurações equivalentes.' : 'Hardware ou configurações diferentes; os números não são uma comparação direta de desempenho.'}</p><div class="tabela-rolagem"><table><thead><tr><th>Métrica</th><th>Primeiro teste</th><th>Segundo teste</th></tr></thead><tbody>${METRICAS[id].filter((m)=>selecao.some((d)=>d.componentes[id]?.resumo[m.chave]?.n || d.componentes[id]?.resumo[m.chave]?.total!==undefined)).map((m)=>`<tr><th>${esc(m.rotulo)}</th>${selecao.map((d)=>{const r=d.componentes[id]?.resumo[m.chave];return `<td>${r ? r.total!==undefined ? formatarNumero(r.total,0) : r.n ? `${formatarNumero(r.media,m.casas)} ${esc(m.unidade)}<br><small>mín. ${formatarNumero(r.min,m.casas)} · máx. ${formatarNumero(r.max,m.casas)} · ${r.n} amostras</small>` : 'não disponível' : 'não disponível'}</td>`;}).join('')}</tr>`).join('')}</tbody></table></div><details><summary>Séries completas para auditoria</summary><pre>${esc(JSON.stringify(selecao.map((d)=>d.componentes[id]),null,2))}</pre></details></article>`;
+      alvo.innerHTML = `<p>Resultados completos dos testes. Compare métodos e configurações equivalentes.</p><div class="grade-dupla">${selecao.map((d) => `<article class="cartao"><h3>${esc(d.sistema.aparelho || d.sistema.so)}</h3><p>${esc(d.id)} · metodologia v${d.versao} · ${formatarNumero(d.duracaoS, 0)} s · ${esc(d.sistema.navegador)}</p>${d.ids.map((id) => { const c = d.componentes[id]; return `<h4>${esc(NOMES[id])} · ${esc(c.hardware.modelo || 'não disponível')}</h4><p>${esc(c.hardware.marca || 'Marca não disponível')} · ${c.hardware.frequencia ? `${formatarNumero(c.hardware.frequencia, 0)} ${esc(c.hardware.unidadeFrequencia)}` : 'Frequência não disponível'}</p><p class="nota">${descreverConfig(c.configuracao)}</p>`; }).join('')}</article>`).join('')}</div>` + todos.map((id) => {
+        const igual = selecao.every((d) => d.componentes[id]) && chaveGrupo(selecao[0], id) === chaveGrupo(selecao[1], id);
+        const definicoes = [...new Map(selecao.flatMap((d) => metricasParaVersao(d.versao)[id] || []).map((m) => [m.chave, m])).values()];
+        return `<article class="cartao"><h3>${esc(NOMES[id])}</h3><p class="nota">${igual ? 'Hardware, metodologia e configurações equivalentes.' : 'Hardware, metodologia ou configurações diferentes; os números não são uma comparação direta de desempenho.'}</p><div class="tabela-rolagem"><table><thead><tr><th>Métrica</th><th>Primeiro teste</th><th>Segundo teste</th></tr></thead><tbody>${definicoes.filter((m) => selecao.some((d) => d.componentes[id]?.resumo[m.chave]?.n || d.componentes[id]?.resumo[m.chave]?.total !== undefined)).map((m) => `<tr><th>${esc(m.rotulo)}</th>${selecao.map((d) => { const r = d.componentes[id]?.resumo[m.chave]; return `<td>${r ? r.total !== undefined ? formatarNumero(r.total, 0) : r.n ? `${formatarNumero(r.media, m.casas)} ${esc(m.unidade)}<br><small>mín. ${formatarNumero(r.min, m.casas)} · máx. ${formatarNumero(r.max, m.casas)} · ${r.n} amostras</small>` : 'não disponível' : 'não disponível'}</td>`; }).join('')}</tr>`).join('')}</tbody></table></div><details><summary>Séries completas para auditoria</summary><pre>${esc(JSON.stringify(selecao.map((d) => d.componentes[id]), null, 2))}</pre></details></article>`;
       }).join('');
     } catch (err) { alvo.textContent = err.message; }
   };
-  // Consulta inicial apenas ao abrir o ranking para evitar uma requisição desnecessária.
   document.querySelector('#ranking-abrir').onclick = () => carregar();
 }

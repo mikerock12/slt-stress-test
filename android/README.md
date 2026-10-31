@@ -8,7 +8,9 @@ offline; só ranking e contribuição precisam de internet.
 
 - CPU: uma thread Java por núcleo selecionado, FFT complexa 4096 ida/volta e Lucas-Lehmer em
   primos de Mersenne conhecidos. Verifica respostas e informa GFLOPS/iterações por segundo.
-- GPU: a mesma cena WebGL2 do site, resolução fixa, FPS, vazão e verificação de artefatos.
+- GPU: a mesma cena WebGL2 do site, resolução fixa, passadas/s, lotes/s, RAF e vazão equivalente,
+  separadamente. Não chama essas medidas de FPS do display. A referência periódica verifica
+  autoconsistência visual no mesmo ambiente; divergências não comprovam defeito físico isolado.
 - Memória: buffers alocados pelo NDK fora do heap ART/Java, oito padrões, leitura, escrita,
   cópia e latência aproximada. Blocos segmentados e liberados explicitamente ao encerrar.
   Verifica o conteúdo de ambos os buffers. O total alocado e o solicitado aparecem no JSON;
@@ -58,8 +60,9 @@ testado. O modo não garante que o fabricante disponibilize todos os sensores.
 - Cargas nativas usam prioridade de fundo para preservar a interface. Se o Android encerrar
   o renderizador WebView, cargas recebem parada e o app oferece reabrir sem reiniciar testes.
 - GPU com no máximo um lote em voo, conclusão por fence sem bloquear a página, leitura de
-  referência assíncrona por PBO e parada em perda de contexto ou quadro sem conclusão por 5 s.
-  Motor `webgl2-fence-v2` separado do anterior no ranking; só conta quadros concluídos.
+  referência assíncrona por PBO e parada em perda de contexto ou lote sem conclusão por 5 s.
+  Motor `webgl2-fence-v3` separado dos anteriores no ranking; só conta trabalho concluído.
+  Timer query é opcional e descartada em caso de disjoint; sem ela, tempo de GPU fica ausente.
 - No celular, padrão de metade das threads (1 em aparelhos com até 2), GPU 360p/leve e
   memória 256 MiB com menos workers. Opções completas continuam selecionáveis. Queda >= 50%
   persistente em CPU/GPU interrompe a carga após a janela inicial; é um sinal de proteção,
@@ -90,11 +93,11 @@ A biblioteca C++ usa alinhamento ELF de 16 KB (LOAD e RELRO), compatível també
 dispositivos de 4 KB. Validar o APK com `zipalign -c -P 16 4` e os segmentos das quatro ABIs.
 Isso não comprova a execução em todos os aparelhos; sensores e root ainda exigem teste físico.
 
-Release do GitHub `v1.3.0`, asset `SLTStressTest.apk` e `SHA256SUMS.txt`. A mesma release deve
+Release do GitHub `v1.3.1`, asset `SLTStressTest.apk` e `SHA256SUMS.txt`. A mesma release deve
 ter `SLTStressTestPlugin.exe`, pois o download Windows usa `releases/latest/download/`.
 
 O botão do site baixa uma cópia idêntica do APK diretamente do domínio oficial, em
-`/assets/downloads/SLTStressTest-v1.3.0.apk`, sem redirecionamento para o GitHub. A cópia
+`/assets/downloads/SLTStressTest-v1.3.1.apk`, sem redirecionamento para o GitHub. A cópia
 pública e seu `SHA256SUMS.txt` ficam em `assets/downloads/`; o build confere a integridade
 antes de publicar. Em uma atualização, substituir por um novo nome versionado, atualizar
 o checksum, `js/android.js`, o link HTML, `_headers` e o README. Nunca colocar a chave ou

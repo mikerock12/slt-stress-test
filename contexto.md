@@ -11,7 +11,7 @@ no navegador, inspirado em ferramentas nativas consagradas:
 | Componente | Inspiração | O que fazemos no navegador |
 | --- | --- | --- |
 | CPU | Prime95 | Lucas-Lehmer em primos de Mersenne conhecidos (BigInt) + FFT de ponto flutuante verificada, em todos os núcleos via Web Workers |
-| GPU | FurMark | "Rosquinha peluda" em raymarching WebGL2 com resolução fixa; FPS, Mpixels/s e verificação de quadro determinístico (artefatos) |
+| GPU | FurMark | "Rosquinha peluda" em raymarching WebGL2; passadas/s, lotes/s, RAF, Mpixels/s equivalentes e autoconsistência visual, sem chamá-los de FPS do display |
 | Memória | MemTest86 | Padrões (sólidos, xadrez, walking ones, endereço, inversões móveis, aleatório) em buffers grandes; banda de escrita/leitura/cópia e latência |
 | Disco | CrystalDiskMark / CrystalDiskInfo | Arquivo temporário no OPFS: sequencial 1 MiB e aleatório 4 KiB, leitura/escrita, com verificação dos dados |
 
@@ -249,7 +249,13 @@ links. Nenhum código delas foi copiado.
 
 ## Em andamento
 
-(vazio)
+### 30/10/2026 — Etapa web e API do plano v1.4.0
+- Agente: Kimi Code; branch `feat/medicoes-v2-web`; base `60708628d77df8ff860a73e398a7929b68d0863f`.
+- Escopo autorizado pelo pedido de melhorias no serviço e no site: T00–T03, contratos de T09/T10 e regressão web/API. T04–T08 ficam para etapa nativa própria. Como o APK incorpora o site, a entrega prevista passou a incluir APK 1.3.1/code 5; plugin 1.2.0, driver e motores nativos não mudam.
+- Arquivos compartilhados reservados: `js/app.js`, `js/avaliacao.js`, `js/metricas.js`, `js/relatorio.js`, `js/testes/gpu.js`, `js/benchmark.js`, `js/ranking.js`, `worker/index.js`, HTML/CSS e testes relacionados.
+- Baseline concluído: 60 testes/sintaxe, build do site, algoritmos e build/lint Android verdes usando o SDK local já instalado. Estado da implementação: 74 testes, build e dry-run verdes. Nenhum dado sintético será enviado à produção.
+- Validação: GPU 2 min no Chrome concluiu com 116 amostras, 116 s úteis e 97% de cobertura. MAX 2 min terminou sem erros: CPU 119 s/99%, GPU 116 s/97%, RAM 104 s/87%, acompanhamento de disco 119 s/99% e 7 ciclos; relatório e JSON v2 conferidos. Uma segunda carga foi necessária porque o navegador reutilizou módulos antigos; a origem nova confirmou o build correto. APK de validação tem assinatura v2 e o mesmo certificado da 1.3.0; interface debug abriu no Android 16. PDF automático foi bloqueado pela ferramenta; Firefox e aparelhos físicos pendentes.
+- Implementação: GPU v3, timestamps locais e qualidade temporal, vereditos por componente, JSON auditável e ranking v2 separado. MAX v2 com qualquer componente sem dados/falha fica inteiro inelegível. Timestamps brutos são validados no Worker, mas não persistidos/publicados. O APK definitivo será gerado após o commit-fonte para registrar esse hash no build.
 
 ## Conferência em aparelho físico pendente
 
