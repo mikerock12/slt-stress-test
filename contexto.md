@@ -59,6 +59,9 @@ links. Nenhum código delas foi copiado.
   PDF automatizado bloqueado pela ferramenta; Firefox e aparelhos físicos continuam pendentes.
   T04–T08 do plano mestre ficam para etapa nativa própria. Uma falha temporária 7403 do Cloudflare
   foi resolvida ao confirmar acesso e repetir a migração normal, sem alteração manual do D1.
+  Portal `softwares.smellsliketech.com.br` atualizado nos PRs #34/#35, Worker
+  `cf7844b7-ebd8-4422-bc36-b97ab2b187bb`: 46 testes, página renderizada com versão/métricas,
+  privado 401 e Tonal preservado. Backup principal e do portal na pasta de 30/10/2026.
 
 - 24/10/2026 — **Detecção do plugin e RAM real publicadas**, PR
   [#11](https://github.com/mikerock12/slt-stress-test/pull/11), CI
@@ -273,7 +276,7 @@ links. Nenhum código delas foi copiado.
 
 ## Em andamento
 
-- 30/10/2026 — Backup da entrega do PR #12 em `G:/Meu Drive/Backups/Smells Like Tech - Stress Test/2026-10-30/`: evidências locais já separadas; faltam fontes e bundle da main final, dump D1, assets da release e conferência de integridade. Não copiar chave, senha ou credenciais.
+(vazio)
 
 ## Conferência em aparelho físico pendente
 
@@ -287,7 +290,8 @@ links. Nenhum código delas foi copiado.
 
 - 30/10/2026 — PR #12: métricas GPU v3, estatística/cobertura, vereditos e JSON v2, ranking v2
   isolado e APK 1.3.1. CI verde, release e Worker publicados; hashes de produção conferidos.
-  Backup da entrega em andamento na pasta de 30/10/2026.
+  Portal de softwares atualizado nos PRs #34/#35. Backup principal e do portal concluído em
+  `G:/Meu Drive/Backups/Smells Like Tech - Stress Test/2026-10-30/`, sem segredos.
 
 - 24/10/2026 — PR #11: conexão do plugin sem reiniciar navegador e RAM real no painel/relatório; CI verde e produção conferida.
 

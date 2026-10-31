@@ -138,6 +138,10 @@ Chrome; relatório/JSON e hashes de produção conferidos. APK SHA-256
 `c3ef397357aa3f760ffa5d4c451ca43d4a371f4b164dd96de9ad539f13fd22c0`.
 PDF automatizado ficou bloqueado pela ferramenta; Firefox e aparelhos físicos continuam pendentes.
 T04–T08 do plano mestre ficam para etapa nativa própria. Nenhuma alteração de PawnIO ou segredos.
+Portal `softwares.smellsliketech.com.br` atualizado nos PRs #34/#35; Worker
+`cf7844b7-ebd8-4422-bc36-b97ab2b187bb`, 46 testes e produção conferida.
+Backup principal e do portal em `G:/Meu Drive/Backups/Smells Like Tech - Stress Test/2026-10-30/`,
+sem chave, senha ou credenciais.
 
 ## Última correção web (24/10/2026)
 
