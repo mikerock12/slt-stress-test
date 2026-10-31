@@ -106,3 +106,31 @@ test('registros legados sem prova de consentimento não são públicos até nova
   assert.equal((await post(env, e)).status, 200);
   assert.equal((await get(env, '/api/benchmarks/' + e.id)).status, 200);
 });
+
+function gpuApi(versao) {
+  const e = dados(); e.versao = versao; e.ids = ['gpu'];
+  if (versao === 2) e.perfil = 'rapido';
+  e.componentes = { gpu: { hardware: { marca: 'ARM', modelo: 'Mali-G720 MC7' },
+    configuracao: { motor: `webgl2-fence-v${versao + 1}`, largura: 640, altura: 360, intensidade: 64, simultaneos: 'gpu', duracaoAlvoS: 120 },
+    series: versao === 1 ? { fps: Array(120).fill(60), artefatos: [0] } : { passadasPorSegundo: Array(120).fill(60), divergenciasReferencia: [0] } } };
+  if (versao === 2) e.componentes.gpu.tempos = { passadasPorSegundo: Array.from({ length: 120 }, (_, i) => i + 1), divergenciasReferencia: [1] };
+  return e;
+}
+
+test('API publica e consulta v1/v2 sem cruzar médias nem métricas de GPU', async () => {
+  const env = { DB: banco() };
+  const atual = gpuApi(2);
+  assert.equal((await post(env, gpuApi(1))).status, 201);
+  assert.equal((await post(env, atual)).status, 201);
+  const detalhe = await (await get(env, '/api/benchmarks/' + atual.id)).json();
+  assert.equal(detalhe.componentes.gpu.tempos, undefined, 'timestamps brutos não são persistidos nem publicados');
+  assert.equal(detalhe.componentes.gpu.qualidade.cobertura, 1);
+  const v1 = await (await get(env, '/api/ranking?componente=gpu&versao=1')).json();
+  const v2 = await (await get(env, '/api/ranking?componente=gpu&versao=2')).json();
+  assert.equal(v1.metricaPrincipal, 'fps'); assert.equal(v2.metricaPrincipal, 'passadasPorSegundo');
+  assert.equal(v1.resultados.length, 1); assert.equal(v2.resultados.length, 1);
+  assert.notEqual(v1.resultados[0].grupo, v2.resultados[0].grupo);
+  assert.equal(v1.resultados[0].metricas.fps.media, 60);
+  assert.equal(v2.resultados[0].metricas.passadasPorSegundo.media, 60);
+  assert.equal((await get(env, '/api/ranking?componente=gpu&versao=3')).status, 400);
+});

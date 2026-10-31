@@ -14,7 +14,7 @@ test('parada por temperatura vira atenção no componente e no veredito geral', 
   const disparo = { componente: 'cpu', temp: 96.4, limite: 95 };
   const a = avaliar('cpu', resumirComponente('cpu', { gflops: serie }), { disparoTemp: disparo });
   assert.equal(a.status, 'atencao');
-  assert.match(a.motivos[0], /CPU chegou a 96 °C, acima do limite de 95 °C/);
+  assert.match(a.motivos[0], /CPU a 96 °C, acima do limite de 95 °C/);
 
   // Com a parada, não pode aparecer "sob controle" ao lado do motivo.
   const comTemp = avaliar('cpu', resumirComponente('cpu', { gflops: serie, tempC: serie.map(() => 73) }), { disparoTemp: disparo });

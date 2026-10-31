@@ -9,8 +9,8 @@ android {
         applicationId 'br.com.smellsliketech.stresstest'
         minSdk 26
         targetSdk 35
-        versionCode 4
-        versionName '1.3.0'
+        versionCode 5
+        versionName '1.3.1'
         ndk { abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64', 'x86' }
     }
     signingConfigs {
@@ -31,6 +31,18 @@ tasks.register('copiarSite', Sync) {
     include 'index.html', 'privacidade.html', 'css/**', 'js/**', 'assets/**'
     exclude 'assets/downloads/**'
     into layout.buildDirectory.dir('generated/siteAssets/slt')
+    doLast {
+        def commit = null
+        try {
+            def processo = new ProcessBuilder('git', 'rev-parse', 'HEAD').directory(rootProject.file('..')).redirectErrorStream(true).start()
+            def saida = processo.inputStream.getText('UTF-8').trim()
+            if (processo.waitFor() == 0 && saida ==~ /^[a-f0-9]{40}$/) commit = saida
+        } catch (ignored) { }
+        def dados = [version: "android-${android.defaultConfig.versionName}-metodologia-2", commit: commit, builtAt: java.time.Instant.now().toString()]
+        def arquivo = layout.buildDirectory.file('generated/siteAssets/slt/js/build.js').get().asFile
+        arquivo.parentFile.mkdirs()
+        arquivo.text = "export const BUILD = ${groovy.json.JsonOutput.toJson(dados)};\n"
+    }
 }
 android.sourceSets.main.assets.srcDir layout.buildDirectory.dir('generated/siteAssets')
 tasks.named('preBuild').configure { dependsOn 'copiarSite' }

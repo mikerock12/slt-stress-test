@@ -4,6 +4,7 @@ import { formatarDuracao, formatarNumero } from './metricas.js';
 import { graficoRelatorio } from './graficos.js';
 import { DOWNLOAD, descricaoMemoria } from './plugin.js';
 import { integrarComparacao } from './ranking.js';
+import { BUILD } from './build.js';
 
 const ESTADOS_DISCO = { bom: 'Bom', cuidado: 'Cuidado', ruim: 'Ruim' };
 const FASES_CDM = [
@@ -18,7 +19,14 @@ function discoDaUnidade(saude, unidade) {
   return (saude || []).find((d) => d.letras?.includes(unidade));
 }
 
-const PRINCIPAL = { cpu: 'gflops', gpu: 'fps', memoria: 'copiaGBs', disco: 'seqEscrita', pressao: 'estado' };
+const PRINCIPAL = { cpu: 'gflops', gpu: 'passadasPorSegundo', memoria: 'copiaGBs', disco: 'seqEscrita', pressao: 'estado' };
+const ESCOPOS = {
+  cpu: 'Confere FFT e Lucas–Lehmer nas threads selecionadas. Não mede todos os núcleos nem comprova a causa de uma queda sem sensores.',
+  gpu: 'Mede trabalho de shader concluído e autoconsistência de imagens no mesmo ambiente. Não mede FPS do display nem comprova correção absoluta da GPU.',
+  memoria: 'Verifica somente os buffers alocados neste processo. O volume acumulado verificado é separado da capacidade alocada e não cobre toda a RAM.',
+  disco: 'Mede o caminho de armazenamento selecionado. OPFS e Android podem incluir cache; somente o plugin Windows identifica seu método sem cache.',
+  pressao: 'Usa a Compute Pressure API quando disponível; é um sinal auxiliar, não um termômetro.',
+};
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -33,14 +41,19 @@ function estabilidade(cv) {
 // Calcula tudo o que o relatório mostra; separado do HTML para virar o JSON exportado.
 export function analisar(dados) {
   const componentes = {};
-  // A pressão só pesa no veredito quando a CPU também perdeu desempenho.
-  const quedaCpu = dados.componentes.cpu ? resumirComponente('cpu', dados.componentes.cpu.series).gflops.queda : null;
+  const opcoesResumo = { duracaoAlvoS: dados.duracaoAlvoS || dados.duracaoS };
+  const quedaCpu = dados.componentes.cpu ? resumirComponente('cpu', dados.componentes.cpu.series, dados.componentes.cpu.tempos, opcoesResumo).gflops.queda : null;
+  const duracaoConcluida = !dados.duracaoAlvoS || dados.duracaoS >= Math.max(0, dados.duracaoAlvoS - 5);
+  const concluidoBase = dados.motivo === 'Tempo concluído' && duracaoConcluida && !dados.oculta && !dados.interrupcaoAndroid && !dados.interrupcaoMovel && !dados.protecao?.disparo;
   for (const [id, c] of Object.entries(dados.componentes)) {
-    const resumo = resumirComponente(id, c.series);
+    const resumo = resumirComponente(id, c.series, c.tempos, opcoesResumo);
     const avisos = [...(c.info?.avisos || [])];
     const fisico = id === 'disco' && c.info?.modo === 'nativo' ? discoDaUnidade(dados.saudeDiscos, c.info.unidade) : null;
+    const falhaFatal = c.falhaFatal || c.info?.falhaFatal;
     const avaliacao = avaliar(id, resumo, {
-      falhaFatal: c.falhaFatal || c.info?.falhaFatal,
+      falhaFatal,
+      execucao: { concluido: concluidoBase && !falhaFatal, motivo: dados.motivo, duracaoAlvoS: dados.duracaoAlvoS, duracaoRealS: dados.duracaoS, distribuicao: c.info?.distribuicao, ciclos: c.info?.ciclos ?? resumo.ciclos?.total },
+      perfil: dados.perfil,
       distribuicao: c.info?.distribuicao,
       quedaCpu,
       movel: dados.sistema?.dispositivo?.tipo === 'celular',
@@ -53,14 +66,13 @@ export function analisar(dados) {
   }
   const avaliacoes = Object.fromEntries(Object.entries(componentes).filter(([id]) => id !== 'pressao').map(([id, c]) => [id, c.avaliacao]));
   const geral = vereditoGeral(avaliacoes);
-  const errosMedidos = Object.values(componentes).some((c) => (c.resumo.erros?.total || 0) > 0 || (c.resumo.artefatos?.total || 0) > 0);
+  const errosMedidos = Object.values(componentes).some((c) => (c.resumo.erros?.total || 0) > 0 || (c.resumo.divergenciasReferencia?.total || 0) > 0 || (c.resumo.artefatos?.total || 0) > 0);
   const falhaExecucao = !errosMedidos && Object.values(dados.componentes).some((c) => c.falhaFatal || c.info?.falhaFatal);
-  if (geral.status === 'falha' && falhaExecucao) geral.titulo = 'Teste incompleto: falha na execução';
+  if (geral.status === 'na' && falhaExecucao) geral.titulo = 'Teste inconclusivo: falha na execução';
   if (componentes.pressao?.avaliacao.status === 'atencao' && geral.status === 'ok') {
     geral.status = 'atencao';
-    geral.titulo = 'Aprovado com ressalvas';
+    geral.titulo = 'Sem erros verificados, mas há pontos de atenção';
   }
-  // Parada por temperatura: nunca "aprovado", mesmo se o componente quente não estava em teste.
   if (dados.protecao?.disparo && geral.status !== 'falha') {
     geral.status = 'atencao';
     geral.titulo = 'Interrompido pela proteção de temperatura';
@@ -91,9 +103,9 @@ function textoProtecao(p) {
 function linhaMetricas(id, resumo) {
   return METRICAS[id].map((m) => {
     const r = resumo[m.chave];
-    if (m.plugin && !r.n) return ''; // sensor que não respondeu nesta máquina
+    if (!r || (m.tipo !== 'contador' && !r.n)) return '';
     if (m.tipo === 'contador') {
-      return `<tr><th scope="row">${esc(m.rotulo)}</th><td colspan="4" class="${r.total > 0 && /erro|artefato/i.test(m.rotulo) ? 'ruim' : ''}">
+      return `<tr><th scope="row">${esc(m.rotulo)}</th><td colspan="4" class="${r.total > 0 && /erro|artefato|divergência/i.test(m.rotulo) ? 'ruim' : ''}">
         <strong>${formatarNumero(r.total, m.casas)}</strong> ${esc(m.unidade)}</td></tr>`;
     }
     return `<tr><th scope="row">${esc(m.rotulo)}</th>
@@ -103,14 +115,26 @@ function linhaMetricas(id, resumo) {
   }).join('');
 }
 
+function qualidadePrincipal(id, resumo, info = {}) {
+  const r = resumo[PRINCIPAL[id]];
+  const m = METRICAS[id]?.find((item) => item.chave === PRINCIPAL[id]);
+  if (!r?.n || !m) return '';
+  const temporal = id === 'disco' ? resumo.erros : r;
+  const itens = [`P5 ${formatarNumero(r.p5, m.casas)} ${m.unidade}`, `P50 ${formatarNumero(r.p50, m.casas)}`, `P95 ${formatarNumero(r.p95, m.casas)}`];
+  if (temporal?.tempoUtilS !== null && temporal?.tempoUtilS !== undefined) itens.push(`${formatarNumero(temporal.tempoUtilS, 1)} s úteis`, `${formatarNumero(temporal.cobertura * 100, 0)}% de cobertura do acompanhamento`);
+  if (id === 'disco') itens.push(`${r.n} medições de fase`, `${info.ciclos ?? resumo.ciclos?.total ?? 0} ciclo(s) completo(s)`);
+  if (r.regressoesIntermediarias !== null && r.regressoesIntermediarias !== undefined) itens.push(`${r.regressoesIntermediarias} regressão(ões) intermediária(s) sustentada(s)`);
+  return `<p class="nota"><strong>Janelas temporais da métrica principal:</strong> ${esc(itens.join(' · '))}.</p>`;
+}
+
 function detalheInfo(id, info = {}, opcoes = {}) {
   const itens = [];
   if (id === 'cpu') itens.push(`${info.threads ?? opcoes.threads} threads`);
-  if (id === 'gpu') itens.push(info.renderer, info.resolucao, `${info.passos} passos de raymarching`);
-  if (id === 'memoria') itens.push(`${info.alocadoMiB ?? opcoes.mib} MiB testados`);
+  if (id === 'gpu') itens.push(info.renderer, info.resolucao, `${info.passos} passos de raymarching`, info.motor, `tempo GPU: ${info.tempoGpuMetodo || 'não disponível'}`);
+  if (id === 'memoria') itens.push(`${info.alocadoMiB ?? opcoes.mib} MiB alocados no processo`);
   if (id === 'disco' && info.modo === 'nativo') itens.push(`disco real ${info.unidade} sem cache (plugin)`);
-  if (id === 'disco' && info.modo === 'android') itens.push('armazenamento nativo Android · SEQ1M/RND4K Q1 · leitura pode incluir cache');
-  else if (id === 'disco' && info.modo !== 'nativo') itens.push('armazenamento do navegador (OPFS)');
+  if (id === 'disco' && info.modo === 'android') itens.push('armazenamento nativo Android · SEQ1M/RND4K Q1 · leitura pode incluir cache · escrita sincronizada pela API');
+  else if (id === 'disco' && info.modo !== 'nativo') itens.push('armazenamento do navegador (OPFS) · cache possível');
   if (id === 'disco') itens.push(`arquivo de ${info.arquivoMiB ?? opcoes.mib} MiB`, `${info.ciclos ?? 0} ciclo(s) completos`);
   return itens.filter(Boolean).map(esc).join(' · ');
 }
@@ -124,10 +148,11 @@ function textoResumo(dados, analise) {
   ];
   for (const [id, c] of Object.entries(analise.componentes)) {
     if (c.avaliacao.status === 'na' && id === 'pressao') continue;
-    linhas.push(`${NOMES[id]}: ${c.avaliacao.titulo}`);
+    linhas.push(`${NOMES[id]}: ${c.avaliacao.titulo} · execução ${c.avaliacao.execucao} · diagnóstico ${c.avaliacao.diagnostico}`);
+    linhas.push(`  Escopo: ${ESCOPOS[id]}`);
     for (const m of METRICAS[id]) {
       const r = c.resumo[m.chave];
-      if (m.plugin && !r.n) continue;
+      if (!r || (m.tipo !== 'contador' && !r.n)) continue;
       const v = m.tipo === 'contador' ? r.total : r.media;
       linhas.push(`  ${m.rotulo}: ${formatarNumero(v, m.casas)} ${m.unidade}${m.tipo === 'media' ? ' (média)' : ''}`.trimEnd());
     }
@@ -141,7 +166,6 @@ export function gerarRelatorio(container, dados) {
   const analise = analisar(dados);
   const { geral } = analise;
   const s = dados.sistema || {};
-  // A pressão só aparece quando o navegador entregou leituras de verdade.
   const temPressao = Object.keys(analise.componentes.pressao?.info?.distribuicao || {}).length > 0;
   const ids = [...dados.ids, ...(temPressao ? ['pressao'] : [])];
 
@@ -155,19 +179,22 @@ export function gerarRelatorio(container, dados) {
         <span class="chip ${a.status}">${esc(a.titulo)}</span>
       </header>
       <p class="detalhe">${detalheInfo(id, c.info, dados.opcoes?.[id])}</p>
+      <p class="nota"><strong>Escopo:</strong> ${esc(ESCOPOS[id])}</p>
+      <p class="detalhe">Execução: ${esc(a.execucao)} · diagnóstico: ${esc(a.diagnostico)} · confiabilidade relativa da medição: ${esc(a.confiabilidadeMedicao)}.</p>
       <ul class="motivos">${a.motivos.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>
       <canvas class="grafico" height="120" data-grafico="${id}"></canvas>
+      ${qualidadePrincipal(id, c.resumo, c.info)}
       <div class="tabela-rolagem"><table class="tabela compacta">
         <thead><tr><th>Medida</th><th>Média</th><th>Mín</th><th>Máx</th><th>Estabilidade</th></tr></thead>
         <tbody>${linhaMetricas(id, c.resumo)}</tbody>
       </table></div>
       <details class="explica"><summary>O que cada número significa</summary>
-        <dl>${METRICAS[id].filter((m) => !m.plugin || c.resumo[m.chave]?.n).map((m) => `<dt>${esc(m.rotulo)}</dt><dd>${esc(m.explica)}</dd>`).join('')}</dl>
+        <dl>${METRICAS[id].filter((m) => { const r = c.resumo[m.chave]; return r && (m.tipo === 'contador' ? r.total !== null : r.n); }).map((m) => `<dt>${esc(m.rotulo)}</dt><dd>${esc(m.explica)}</dd>`).join('')}</dl>
       </details>
     </article>`;
   }).join('');
 
-  const erros = dados.eventos.filter((e) => e.tipo === 'erro');
+  const erros = (dados.eventos || []).filter((e) => e.tipo === 'erro');
   const infoDisco = analise.componentes.disco?.info;
   const cdm = infoDisco?.modo === 'nativo' && Object.keys(infoDisco.resultados || {}).length
     ? `<article class="cartao">
@@ -230,12 +257,12 @@ export function gerarRelatorio(container, dados) {
       <div>
         <strong>${esc(geral.titulo)}</strong>
         <p>${(dados.interrupcaoAndroid || dados.interrupcaoMovel) && geral.status !== 'falha' ? esc(dados.interrupcaoAndroid || dados.interrupcaoMovel) : dados.protecao?.disparo && geral.status !== 'falha'
-          ? `O teste parou porque a ${esc(NOMES[dados.protecao.disparo.componente])} passou do limite de ${dados.protecao.disparo.limite} °C que você definiu. Até a parada não houve erros, mas a refrigeração precisa de atenção antes de um teste longo.`
+          ? `O teste parou porque a ${esc(NOMES[dados.protecao.disparo.componente])} passou do limite de ${dados.protecao.disparo.limite} °C que você definiu. Os dados parciais não atestam estabilidade; confira a refrigeração antes de repetir.`
           : {
-          ok: 'Nenhum erro de cálculo, de memória, de imagem ou de dados, e o desempenho se manteve. Para este teste, o sistema se comportou como um computador estável.',
-          atencao: 'Não houve erros, mas algo merece atenção (geralmente queda de desempenho por calor). Veja os detalhes abaixo.',
-          falha: analise.falhaExecucao ? 'Uma carga não conseguiu concluir ou confirmar a limpeza. Isso não comprova defeito do hardware. Consulte o motivo abaixo e aguarde a liberação dos recursos antes de repetir.' : 'Foram encontrados erros nos dados ou cálculos verificados. Veja abaixo qual componente registrou os erros e o que fazer.',
-          na: 'O teste foi curto demais ou não conseguiu medir. Tente de novo com pelo menos 2 minutos.',
+          ok: `As cargas selecionadas concluíram ${formatarDuracao(dados.duracaoS)} sem erros verificados nas áreas medidas. Este resultado vale para a configuração e a cobertura mostradas; não é certificação integral do hardware.`,
+          atencao: 'Não houve erros verificados, mas desempenho, temperatura ou interrupção exigem atenção. A queda isoladamente não comprova calor nem defeito.',
+          falha: analise.falhaExecucao ? 'Uma carga não conseguiu concluir ou confirmar a limpeza. Isso não comprova defeito do hardware. Consulte o motivo abaixo e aguarde a liberação dos recursos antes de repetir.' : 'Foram encontrados erros nos dados ou cálculos verificados. A ferramenta distingue esses erros de uma falha de execução; veja o componente e o escopo abaixo.',
+          na: 'A execução não concluiu o perfil ou faltam métrica principal, tempo útil ou cobertura. Dados parciais ficam disponíveis, sem aprovação global.',
         }[geral.status]}</p>
       </div>
     </div>
@@ -263,7 +290,7 @@ export function gerarRelatorio(container, dados) {
         No lugar, use os sinais indiretos acima:</p>
       <ul>
         ${temCPU ? '<li><strong>CPU</strong>: queda de desempenho pode indicar limite térmico, de energia ou disputa por recursos. Sem sensor, não confirma temperatura.</li>' : ''}
-        ${temGPU ? '<li><strong>GPU</strong>: queda de FPS também pode decorrer de limite térmico, de energia ou disputa por recursos.</li>' : ''}
+        ${temGPU ? '<li><strong>GPU</strong>: queda de passadas por segundo também pode decorrer de limite térmico, de energia ou disputa por recursos.</li>' : ''}
         ${s.dispositivo?.tipo === 'celular' ? '<li>No iPhone, o navegador não oferece temperatura de CPU/GPU. No Android, o APK tenta fontes legíveis sem root; a disponibilidade varia entre fabricantes. Se esquentar, pare e aguarde esfriar, fora do carregador.</li>' : `<li>Para as temperaturas exatas, deixe o <a href="https://github.com/LibreHardwareMonitor/LibreHardwareMonitor" target="_blank" rel="noopener">LibreHardwareMonitor</a>
           ou o <a href="https://www.hwinfo.com/" target="_blank" rel="noopener">HWiNFO</a> aberto durante o teste e anote os máximos.
           Para a saúde do disco, use o <a href="https://crystalmark.info/en/software/crystaldiskinfo/" target="_blank" rel="noopener">CrystalDiskInfo</a>.</li>
@@ -291,9 +318,9 @@ export function gerarRelatorio(container, dados) {
       </article>
     </div>
 
-    <p class="nota">Gerado por SLT Stress Test (stresstest.smellsliketech.com.br). Os números
-      dependem do navegador, do sistema e do que mais estava aberto. Compare resultados do mesmo
-      computador, no mesmo navegador.</p>`;
+    <p class="nota"><strong>Comparabilidade:</strong> metodologia v2. GPU v3 mede passadas/s, lotes/s e RAF separadamente;
+      não compare esses valores com o campo “FPS” do protocolo v1. CPU, memória e disco mantêm seus motores,
+      mas a cobertura temporal passa a fazer parte da elegibilidade. Build ${esc(BUILD.version)} · commit ${esc(BUILD.commit || 'não disponível nesta execução local')}.</p>`;
 
   for (const canvas of container.querySelectorAll('[data-grafico]')) {
     const id = canvas.dataset.grafico;
@@ -315,7 +342,8 @@ export function gerarRelatorio(container, dados) {
       setTimeout(() => { e.target.textContent = 'Copiar resumo'; }, 2000);
     }
     if (acao === 'json') {
-      const json = JSON.stringify({ versao: 1, ...dados, analise }, null, 2);
+      const json = JSON.stringify({ versao: 2, schemaVersion: 2, benchmarkMethodVersion: 2,
+        buildVersion: BUILD.version, commit: BUILD.commit, buildTimestamp: BUILD.builtAt, exportadoEm: new Date().toISOString(), ...dados, analise }, null, 2);
       if (dados.android) { globalThis.SLTAndroid.exportar(json); return; }
       const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
       const a = document.createElement('a');

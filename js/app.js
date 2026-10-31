@@ -352,9 +352,9 @@ function atualizarPaineis() {
     const painel = document.querySelector(`.painel[data-comp="${id}"]`);
     if (!painel) continue;
     const estado = painel.querySelector('[data-estado]');
-    const erros = comp.series.erros?.at(-1) ?? comp.series.artefatos?.at(-1) ?? 0;
-    if (comp.falhaFatal) { estado.textContent = 'falhou'; estado.className = 'estado falha'; }
-    else if (erros > 0) { estado.textContent = `${erros} erro(s)`; estado.className = 'estado falha'; }
+    const erros = comp.series.erros?.at(-1) ?? comp.series.divergenciasReferencia?.at(-1) ?? comp.series.artefatos?.at(-1) ?? 0;
+    if (comp.falhaFatal) { estado.textContent = 'inconclusivo · falha do motor'; estado.className = 'estado falha'; }
+    else if (erros > 0) { estado.textContent = `${erros} erro(s) de verificação`; estado.className = 'estado falha'; }
     else if (comp.iniciado) { estado.textContent = 'rodando · sem erros'; estado.className = 'estado ok'; }
     for (const m of METRICAS[id]) {
       const el = painel.querySelector(`[data-valor="${m.chave}"]`);
@@ -459,7 +459,7 @@ async function executar(ids, duracaoS, modo) {
     if (ex.finalizando) return;
     const Classe = id === 'disco' && discoReal ? TesteDiscoPlugin : CLASSES[id];
     const inst = android && ['cpu', 'memoria', 'disco'].includes(id) ? new TesteAndroid(id) : new Classe();
-    const comp = { instancia: inst, series: {}, iniciado: false };
+    const comp = { instancia: inst, series: {}, tempos: {}, iniciado: false };
     ex.componentes[id] = comp;
     try {
       await inst.iniciar(opcoes[id], aoEvento);
@@ -499,6 +499,7 @@ function tique() {
     for (const [k, v] of Object.entries(amostra)) {
       if (!Number.isFinite(v)) continue;
       (comp.series[k] ||= []).push(v);
+      (comp.tempos[k] ||= []).push(decorrido);
     }
     const fatal = comp.instancia.falhaFatal;
     if (fatal && !comp.falhaFatal) comp.falhaFatal = fatal;
@@ -508,7 +509,7 @@ function tique() {
   const falhaGpu = ex.componentes.gpu?.instancia.falhaFatal;
   if (falhaGpu) { ex.componentes.gpu.falhaFatal = falhaGpu; finalizar('GPU interrompida: ' + falhaGpu); return; }
   const queda = ex.protecaoMovel?.verificar(decorrido, {
-    cpu: ex.componentes.cpu?.series.gflops?.at(-1), gpu: ex.componentes.gpu?.series.fps?.at(-1),
+    cpu: ex.componentes.cpu?.series.gflops?.at(-1), gpu: ex.componentes.gpu?.series.passadasPorSegundo?.at(-1),
   });
   if (queda) {
     ex.interrupcaoMovel = `Carga encerrada após queda persistente de ${Math.round(queda.queda)}% na ${queda.componente.toUpperCase()}. Pode haver limite térmico, de energia ou disputa por recursos; sem sensor não é possível confirmar a temperatura. Aguarde o aparelho esfriar antes de repetir.`;
@@ -573,7 +574,7 @@ async function finalizar(motivo) {
   for (const [id, c] of Object.entries(ex.componentes)) {
     let info = {};
     try { info = c.instancia.info(); } catch { c.falhaFatal ||= 'Não foi possível obter os detalhes finais desta carga.'; }
-    componentes[id] = { series: c.series, info, falhaFatal: c.falhaFatal };
+    componentes[id] = { series: c.series, tempos: c.tempos, info, falhaFatal: c.falhaFatal };
   }
   execucao = null;
   document.body.classList.remove('rodando');
@@ -588,6 +589,7 @@ async function finalizar(motivo) {
     modo: ex.modo,
     motivo,
     inicio: ex.inicio,
+    perfil: ex.duracaoS === 120 ? 'rapido' : ex.duracaoS === 900 ? 'completo' : ex.duracaoS >= 1800 ? 'extremo' : ex.duracaoS ? 'personalizado' : 'indefinido',
     duracaoAlvoS: ex.duracaoS,
     duracaoS: duracaoReal,
     sistema,

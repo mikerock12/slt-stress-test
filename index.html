@@ -67,7 +67,7 @@
         <label class="card-teste" data-teste="gpu">
           <input type="checkbox" name="teste" value="gpu" checked>
           <span class="card-cab"><span class="icone" aria-hidden="true">🍩</span><span><strong>GPU</strong><small>estilo FurMark</small></span></span>
-          <span class="card-desc">Rosquinha peluda em raymarching WebGL2. Mede FPS, vazão de pixels e procura artefatos.</span>
+          <span class="card-desc">Rosquinha peluda em raymarching WebGL2. Mede passadas e lotes concluídos, vazão equivalente e autoconsistência visual — não FPS da tela.</span>
           <span class="opcao">Resolução
             <select name="gpuRes">
               <option value="640x360">360p (celulares)</option>
@@ -125,7 +125,7 @@
         retire a capa e desconecte o carregador. No iPhone, o navegador não expõe sensores térmicos.</p>
       <h2><span class="passo">2</span> Duração</h2>
       <div class="duracoes" role="radiogroup" aria-label="Duração do teste">
-        <label><input type="radio" name="duracao" value="120"><span>2 min<small>rápido</small></span></label>
+        <label><input type="radio" name="duracao" value="120"><span>2 min<small>triagem preliminar</small></span></label>
         <label><input type="radio" name="duracao" value="900" checked><span>15 min</span></label>
         <label><input type="radio" name="duracao" value="1800"><span>30 min</span></label>
         <label><input type="radio" name="duracao" value="3600"><span>1 hora</span></label>
@@ -185,7 +185,7 @@
         <p class="selo">Celular / tablet</p><h2>Aplicativo Android</h2>
         <p id="android-conteudo"></p>
         <pre class="nota" id="android-leituras"></pre>
-        <a class="botao primario" id="btn-baixar-apk" href="/assets/downloads/SLTStressTest-v1.3.0.apk" download="SLTStressTest-v1.3.0.apk">Baixar aplicativo Android (.apk)</a>
+        <a class="botao primario" id="btn-baixar-apk" href="/assets/downloads/SLTStressTest-v1.3.1.apk" download="SLTStressTest-v1.3.1.apk">Baixar aplicativo Android (.apk)</a>
         <p class="nota">Download direto deste site. Se um download anterior ficou em 100%, cancele essa tentativa e baixe novamente pelo botão acima. Confira o arquivo na pasta Downloads do celular.</p>
         <p class="nota">Android 8 ou mais recente e Android System WebView/Chrome atualizado (110+). Após baixar, abra o APK, autorize a instalação pelo navegador e abra o aplicativo. Não exige conta nem root. O Android e cada fabricante determinam quais sensores podem ser lidos; o app tenta as fontes disponíveis e explica ausências. SMART e acesso a toda a RAM física podem exigir ferramentas privilegiadas. CPU/GPU, frequência por núcleo, bateria e estado térmico são identificados separadamente.</p>
         <details><summary>Identificação, fontes e disponibilidade</summary><pre id="android-dados">Abra o aplicativo para coletar os dados nativos.</pre></details>
@@ -195,8 +195,9 @@
 
     <section id="ranking" class="bloco nao-imprimir">
       <h2>Ranking da comunidade</h2>
-      <p>CPU, GPU, HDD, SSD e memória separados por hardware e configuração. A média de referência precisa de pelo menos 5 contribuintes. Resultados enviados pela comunidade, sem certificação.</p>
+      <p>CPU, GPU, HDD, SSD e memória separados por hardware, metodologia, perfil e configuração. A média de referência precisa de pelo menos 5 contribuintes. Resultados enviados pela comunidade, sem certificação.</p>
       <form id="ranking-filtros" class="ranking-filtros">
+        <label>Metodologia <select name="versao"><option value="2" selected>Atual (v2 · cobertura temporal)</option><option value="1">Anterior (v1 · histórico)</option></select></label>
         <label>Componente <select name="componente"><option value="cpu">CPU</option><option value="gpu">GPU</option><option value="disco">Armazenamento</option><option value="memoria">Memória</option></select></label>
         <label>Tipo <select name="tipo"><option value="">Todos</option><option>HDD</option><option>SSD</option><option>Flash</option><option>DDR3</option><option>DDR4</option><option>DDR5</option></select></label>
         <label>Marca <input name="marca" maxlength="240" placeholder="Marca exata"></label>
@@ -262,11 +263,13 @@
         <article class="cartao">
           <h3>🍩 GPU</h3>
           <p>Uma rosquinha coberta de "pelo" é desenhada por raymarching volumétrico, a mesma ideia da
-            cena do FurMark: muitos cálculos por pixel, sem pausa. A resolução interna é fixa para os
-            números serem comparáveis. A cada 15 segundos um quadro de referência é refeito e comparado
-            ao primeiro: qualquer diferença é <strong>artefato</strong>.</p>
-          <p>O navegador limita os quadros à taxa do monitor, então o teste desenha a cena várias vezes
-            por quadro até saturar a placa. O FPS mostrado é o equivalente sem limite.</p>
+            cena do FurMark: muitos cálculos por pixel. A resolução interna é fixa. A cada 15 segundos,
+            uma imagem fixa é comparada à primeira referência no mesmo ambiente. Diferenças acima da
+            tolerância são <strong>divergências de autoconsistência</strong>, não prova isolada de defeito.</p>
+          <p>Cada lote repete a cena várias vezes e um fence confirma sua conclusão. O relatório separa
+            <strong>passadas/s</strong>, <strong>lotes/s</strong> e callbacks de <strong>requestAnimationFrame</strong>:
+            nenhum deles é FPS do display. O tempo de GPU só aparece quando uma timer query válida o mede;
+            o tempo de parede do lote inclui espera e escalonamento.</p>
         </article>
         <article class="cartao">
           <h3>🧠 Memória</h3>

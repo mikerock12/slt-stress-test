@@ -5,9 +5,9 @@ Teste de estresse e benchmark de **CPU, GPU, memória e armazenamento**, da
 Windows e ranking comunitário persistente.
 
 **[Abrir o site](https://stresstest.smellsliketech.com.br)** ·
-[Baixar APK Android](https://stresstest.smellsliketech.com.br/assets/downloads/SLTStressTest-v1.3.0.apk) ·
+[Baixar APK Android](https://stresstest.smellsliketech.com.br/assets/downloads/SLTStressTest-v1.3.1.apk) ·
 [Baixar plugin Windows](https://github.com/mikerock12/slt-stress-test/releases/latest/download/SLTStressTestPlugin.exe) ·
-[Release e checksums](https://github.com/mikerock12/slt-stress-test/releases/tag/v1.3.0)
+[Release e checksums](https://github.com/mikerock12/slt-stress-test/releases/tag/v1.3.1)
 
 ## Escolha sua plataforma
 
@@ -27,7 +27,7 @@ executados no navegador.
 | Teste | Inspirado em | O que faz |
 | --- | --- | --- |
 | CPU | Prime95 | Lucas-Lehmer em primos de Mersenne conhecidos + FFT verificada, em todas as threads |
-| GPU | FurMark | Rosquinha peluda em raymarching WebGL2, FPS, vazão de pixels e detecção de artefatos |
+| GPU | FurMark | Raymarching WebGL2 com passadas/s, lotes/s, RAF, vazão equivalente e autoconsistência visual; não apresenta essas medidas como FPS do display |
 | Memória | MemTest86 | 8 padrões gravados e conferidos, banda de escrita/leitura/cópia e latência |
 | Disco | CrystalDiskMark | Sequencial 1 MiB e aleatório 4 KiB (leitura/escrita) num arquivo temporário OPFS, com verificação |
 
