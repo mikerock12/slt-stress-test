@@ -122,16 +122,22 @@ MAX STRESS de 2 min, conferir o relatório, a impressão em PDF e o JSON exporta
   a zona smellsliketech.com.br usa nameservers do Cloudflare, então o Registro.br não muda.
 - Repositório público no GitHub; backup em `G:/Meu Drive/Backups/Smells Like Tech - Stress Test/`.
 
-## Trabalho atual (30/10/2026)
+## Última entrega web/API (30/10/2026)
 
-Etapa web/API do plano v1.4.0 na branch `feat/medicoes-v2-web`, com os arquivos compartilhados
-reservados em `contexto.md`. GPU v3 separa passadas, lotes, RAF e tempo medido; estatística temporal,
-vereditos por cobertura, JSON auditável e ranking v2 isolado do v1. Timestamps brutos não são
-persistidos no D1. Baseline e estado novo: build/lint Android, build/dry-run do site e 74 testes
-verdes. GPU e MAX por 2 min no Chrome terminaram sem erros; relatório, cobertura, ciclos e JSON v2
-foram conferidos sem persistir testes. APK 1.3.1/code 5 teve build/lint, mesma assinatura e smoke
-debug no Android 16. Plugin 1.2.0, PawnIO e motores nativos não foram alterados. PDF automatizado
-está bloqueado pela ferramenta; Firefox e aparelhos físicos continuam pendentes. T04–T08 ficam para depois.
+PR [#12](https://github.com/mikerock12/slt-stress-test/pull/12) integrado com CI verde nos três
+jobs; merge `0f65c1c9061e6b21543ccc3fb9f74e7cbc0e8be9` e main verde. Release
+[v1.3.1](https://github.com/mikerock12/slt-stress-test/releases/tag/v1.3.1): APK 1.3.1/code 5,
+mesma assinatura, plugin 1.2.0 e fontes PawnIO preservados. Worker
+`45eaf2d3-3d20-485f-93e7-7eef658cdd06` publicado; não houve migração nova.
+GPU v3 separa passadas, lotes, RAF, tempo de parede e timer query; nenhum é FPS do display.
+Estatística temporal, vereditos por cobertura e JSON v2 com build/commit. Ranking v2 separado do
+v1, sem persistir timestamps brutos. Disco distingue fases, ciclos e acompanhamento; MAX v2 com
+dados insuficientes fica inteiro inelegível. Detalhes e limites em `contexto.md` e `RANKING.md`.
+74 testes, build/dry-run, algoritmos Java, build/lint/assinatura Android e GPU/MAX de 2 min no
+Chrome; relatório/JSON e hashes de produção conferidos. APK SHA-256
+`c3ef397357aa3f760ffa5d4c451ca43d4a371f4b164dd96de9ad539f13fd22c0`.
+PDF automatizado ficou bloqueado pela ferramenta; Firefox e aparelhos físicos continuam pendentes.
+T04–T08 do plano mestre ficam para etapa nativa própria. Nenhuma alteração de PawnIO ou segredos.
 
 ## Última correção web (24/10/2026)
 

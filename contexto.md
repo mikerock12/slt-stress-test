@@ -36,6 +36,30 @@ links. Nenhum código delas foi copiado.
 
 ## Estado atual
 
+- 30/10/2026 — **Métricas, cobertura e ranking v2 publicados**, PR
+  [#12](https://github.com/mikerock12/slt-stress-test/pull/12), CI
+  [41154164597](https://github.com/mikerock12/slt-stress-test/actions/runs/41154164597) e main
+  [41154430357](https://github.com/mikerock12/slt-stress-test/actions/runs/41154430357) verdes nos
+  três jobs; merge `0f65c1c9061e6b21543ccc3fb9f74e7cbc0e8be9`. Commit-fonte `e46620e`,
+  empacotamento `ac146f6` e release [v1.3.1](https://github.com/mikerock12/slt-stress-test/releases/tag/v1.3.1).
+  GPU `webgl2-fence-v3`: passadas/s, lotes/s, RAF, tempo de parede e timer query separados, sem
+  chamá-los de FPS. Divergências visuais são autoconsistência, não prova isolada de defeito.
+  Estatística temporal com percentis/cobertura, vereditos que não aprovam componentes sem dados,
+  JSON v2 com build/commit e ranking v2 isolado do v1. Timestamps brutos são usados na validação,
+  mas não persistidos/publicados. Disco usa fases/ciclos e acompanhamento por segundo; MAX v2 com
+  erro, falha ou cobertura insuficiente em qualquer componente fica inteiro inelegível.
+  APK 1.3.1/code 5, mesma assinatura, SHA-256
+  `c3ef397357aa3f760ffa5d4c451ca43d4a371f4b164dd96de9ad539f13fd22c0`; plugin 1.2.0 e fontes
+  PawnIO preservados. Worker `45eaf2d3-3d20-485f-93e7-7eef658cdd06`; sem migração nova.
+  74 testes JS/SQLite, build/dry-run, algoritmos Java, build/lint/assinatura e ZIP/LOAD 16 KiB.
+  Chrome: GPU e MAX por 2 min; MAX final com CPU 119 s/99%, GPU 116 s/97%, RAM 104 s/87%,
+  acompanhamento de disco 119 s/99% e 7 ciclos, relatório/JSON sem persistir testes. Smoke debug
+  no Android 16. Em produção: HTML/módulos com hashes idênticos, APK direto 200/MIME/hash corretos,
+  rankings v1/v2 200, versão/payload inválidos 400 e ranking v2 carregado no navegador.
+  PDF automatizado bloqueado pela ferramenta; Firefox e aparelhos físicos continuam pendentes.
+  T04–T08 do plano mestre ficam para etapa nativa própria. Uma falha temporária 7403 do Cloudflare
+  foi resolvida ao confirmar acesso e repetir a migração normal, sem alteração manual do D1.
+
 - 24/10/2026 — **Detecção do plugin e RAM real publicadas**, PR
   [#11](https://github.com/mikerock12/slt-stress-test/pull/11), CI
   [40135027768](https://github.com/mikerock12/slt-stress-test/actions/runs/40135027768)
@@ -249,13 +273,7 @@ links. Nenhum código delas foi copiado.
 
 ## Em andamento
 
-### 30/10/2026 — Etapa web e API do plano v1.4.0
-- Agente: Kimi Code; branch `feat/medicoes-v2-web`; base `60708628d77df8ff860a73e398a7929b68d0863f`.
-- Escopo autorizado pelo pedido de melhorias no serviço e no site: T00–T03, contratos de T09/T10 e regressão web/API. T04–T08 ficam para etapa nativa própria. Como o APK incorpora o site, a entrega prevista passou a incluir APK 1.3.1/code 5; plugin 1.2.0, driver e motores nativos não mudam.
-- Arquivos compartilhados reservados: `js/app.js`, `js/avaliacao.js`, `js/metricas.js`, `js/relatorio.js`, `js/testes/gpu.js`, `js/benchmark.js`, `js/ranking.js`, `worker/index.js`, HTML/CSS e testes relacionados.
-- Baseline concluído: 60 testes/sintaxe, build do site, algoritmos e build/lint Android verdes usando o SDK local já instalado. Estado da implementação: 74 testes, build e dry-run verdes. Nenhum dado sintético será enviado à produção.
-- Validação: GPU 2 min no Chrome concluiu com 116 amostras, 116 s úteis e 97% de cobertura. MAX 2 min terminou sem erros: CPU 119 s/99%, GPU 116 s/97%, RAM 104 s/87%, acompanhamento de disco 119 s/99% e 7 ciclos; relatório e JSON v2 conferidos. Uma segunda carga foi necessária porque o navegador reutilizou módulos antigos; a origem nova confirmou o build correto. APK de validação tem assinatura v2 e o mesmo certificado da 1.3.0; interface debug abriu no Android 16. PDF automático foi bloqueado pela ferramenta; Firefox e aparelhos físicos pendentes.
-- Implementação: GPU v3, timestamps locais e qualidade temporal, vereditos por componente, JSON auditável e ranking v2 separado. MAX v2 com qualquer componente sem dados/falha fica inteiro inelegível. Timestamps brutos são validados no Worker, mas não persistidos/publicados. O APK definitivo será gerado após o commit-fonte para registrar esse hash no build.
+- 30/10/2026 — Backup da entrega do PR #12 em `G:/Meu Drive/Backups/Smells Like Tech - Stress Test/2026-10-30/`: evidências locais já separadas; faltam fontes e bundle da main final, dump D1, assets da release e conferência de integridade. Não copiar chave, senha ou credenciais.
 
 ## Conferência em aparelho físico pendente
 
@@ -266,6 +284,10 @@ links. Nenhum código delas foi copiado.
 - Teste WebGPU compute como alternativa ao WebGL2.
 
 ## Histórico
+
+- 30/10/2026 — PR #12: métricas GPU v3, estatística/cobertura, vereditos e JSON v2, ranking v2
+  isolado e APK 1.3.1. CI verde, release e Worker publicados; hashes de produção conferidos.
+  Backup da entrega em andamento na pasta de 30/10/2026.
 
 - 24/10/2026 — PR #11: conexão do plugin sem reiniciar navegador e RAM real no painel/relatório; CI verde e produção conferida.
 
